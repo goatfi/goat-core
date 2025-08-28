@@ -18,10 +18,6 @@ jobs:
       - name: Install deps & build (Soldeer + Foundry)
         run: |
           forge soldeer update
-          forge build
 
       - name: Run Slither (skip compile)
         uses: crytic/slither-action@v0.4.1
-        with:
-          ignore-compile: true
-          slither-args: --foundry-out-directory out
