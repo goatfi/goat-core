@@ -1,0 +1,29 @@
+# Compiler files
+cache/
+out/
+coverage/
+
+# Dependencies 
+dependencies/
+
+#Echidna
+/crytic-export
+recon.json
+
+# VS Code
+.vscode/
+.wake/
+
+# Dotenv file
+.env
+
+#Test coverage info file
+lcov.info
+
+#Gas snapshot file
+.gas-snapshot
+
+#Slither
+slither.db.json
+
+.DS_Store

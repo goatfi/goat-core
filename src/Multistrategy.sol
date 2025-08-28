@@ -1,0 +1,570 @@
+// SPDX-License-Identifier: GNU AGPLv3
+
+pragma solidity 0.8.30;
+
+import { 
+    IERC20,
+    IERC4626,
+    ERC20,
+    ERC4626
+} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import { ReentrancyGuard } from "@openzeppelin/utils/ReentrancyGuard.sol";
+import { SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import { Math } from "@openzeppelin/utils/math/Math.sol";
+import { MultistrategyManageable } from "src/abstracts/MultistrategyManageable.sol";
+import { IMultistrategy } from "interfaces/IMultistrategy.sol";
+import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
+import { Errors } from "./libraries/Errors.sol";
+
+contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+    using Math for uint256;
+    
+    /// @dev How much time it takes for the profit of a strategy to be unlocked.
+    uint256 public constant PROFIT_UNLOCK_TIME = 3 days;
+
+    /// @dev Used for locked profit calculations.
+    uint256 public constant DEGRADATION_COEFFICIENT = 1 ether;
+
+    /// @notice OpenZeppelin decimals offset used by the ERC4626 implementation.
+    /// @dev Calculated to be max(0, 18 - underlyingDecimals) at construction, so the initial conversion rate maximizes
+    /// precision between shares and assets.
+    uint8 public immutable DECIMALS_OFFSET;
+
+    /// @notice Determines the rate at which locked profit degrades over time.
+    uint256 public immutable LOCKED_PROFIT_DEGRADATION;
+
+    /// @inheritdoc IMultistrategy
+    uint256 public lastReport;
+    
+    /// @inheritdoc IMultistrategy
+    uint256 public lockedProfit;
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                     CONSTRUCTOR
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @dev Transfers ownership to the deployer of this contract
+    /// @param _asset Address of the token used in this Multistrategy
+    /// @param _manager Address of the initial Multistrategy manager
+    /// @param _protocolFeeRecipient Address that will receive the performance fees
+    /// @param _name Name of this Multistrategy receipt token
+    /// @param _symbol Symbol of this Multistrategy receipt token
+    constructor(
+        address _asset,
+        address _manager,
+        address _protocolFeeRecipient,
+        string memory _name,
+        string memory _symbol
+    ) 
+        MultistrategyManageable(msg.sender, _manager, _protocolFeeRecipient)
+        ERC4626(IERC20(_asset))
+        ERC20(_name, _symbol)
+    {   
+        DECIMALS_OFFSET = uint8(Math.max(0, uint256(18) - IERC20Metadata(_asset).decimals()));
+        performanceFee = 1000;
+        lastReport = block.timestamp;
+        LOCKED_PROFIT_DEGRADATION = DEGRADATION_COEFFICIENT / PROFIT_UNLOCK_TIME;
+    }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                        USER FACING CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc IERC4626
+    function totalAssets() public view override returns (uint256) {
+        return _balance() + totalDebt;
+    }
+
+    /// @inheritdoc IERC4626
+    /// @dev Limited by the deposit limit
+    function maxDeposit(address) public view override returns (uint256) {
+        if(totalAssets() >= depositLimit) {
+            return 0;
+        } else {
+            return depositLimit - totalAssets();
+        }
+    }
+
+    /// @inheritdoc IERC4626
+    /// @dev Limited by the deposit limit
+    function maxMint(address _receiver) public view override returns (uint256) {
+        return convertToShares(maxDeposit(_receiver));
+    }
+
+    /// @inheritdoc IERC4626
+    function previewWithdraw(uint256 _assets) public view override returns (uint256) {
+        uint256 shares = _convertToShares(_assets, Math.Rounding.Ceil);
+        if(_assets <= _balance()) {
+            return shares;
+        } else {
+            if(slippageLimit == MAX_BPS) return type(uint256).max;
+            // Return the number of shares required at the current rate, accounting for slippage.
+            return shares.mulDiv(MAX_BPS, MAX_BPS - slippageLimit, Math.Rounding.Ceil);
+        }
+    }
+
+    /// @inheritdoc IERC4626
+    function previewRedeem(uint256 _shares) public view override returns (uint256) {
+        uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
+        if(assets <= _balance()) {
+            return assets;
+        } else {
+            // Return the number of assets redeemable at the maximum permitted slippage.
+            return assets.mulDiv(MAX_BPS - slippageLimit, MAX_BPS, Math.Rounding.Floor);
+        }
+    }
+
+    /// @inheritdoc IMultistrategy
+    function pricePerShare() external view returns (uint256) {
+        return convertToAssets(1 ether);
+    }
+
+    /// @inheritdoc IMultistrategy
+    function creditAvailable(address _strategy) external view returns (uint256) {
+        return _creditAvailable(_strategy);
+    }
+
+    /// @inheritdoc IMultistrategy
+    function debtExcess(address _strategy) external view returns (uint256) {
+        return _debtExcess(_strategy);
+    }
+
+    /// @inheritdoc IMultistrategy
+    function strategyTotalDebt(address _strategy) external view returns (uint256) {
+        return strategies[_strategy].totalDebt;
+    }
+
+    function currentPnL() external view returns (uint256, uint256) {
+        return _currentPnL();
+    }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                        USER FACING NON-CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc IERC4626
+    function deposit(uint256 _assets, address _receiver) public override whenNotPaused whenNotRetired nonReentrant returns (uint256) {
+        uint256 maxAssets = maxDeposit(_receiver);
+        require(_assets <= maxAssets, ERC4626ExceededMaxDeposit(_receiver, _assets, maxAssets));
+
+        uint256 shares = previewDeposit(_assets);
+        _deposit(msg.sender, _receiver, _assets, shares);
+
+        return shares;
+    }
+
+    /// @inheritdoc IERC4626
+    function mint(uint256 _shares, address _receiver) public override whenNotPaused whenNotRetired nonReentrant returns (uint256) {
+        uint256 maxShares = maxMint(_receiver);
+        require(_shares <= maxShares, ERC4626ExceededMaxMint(_receiver, _shares, maxShares));
+
+        uint256 assets = previewMint(_shares);
+        _deposit(msg.sender, _receiver, assets, _shares);
+
+        return assets;
+    }
+
+    /// @inheritdoc IERC4626
+    function withdraw(uint256 _assets, address _receiver, address _owner) public override whenNotPaused nonReentrant returns (uint256) {
+        uint256 maxAssets = maxWithdraw(_owner);
+        require(_assets <= maxAssets, ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets));
+
+        uint256 maxShares = previewWithdraw(_assets);
+        (, uint256 shares) = _withdraw(msg.sender, _receiver, _owner, _assets, maxShares, false);
+
+        require(shares <= maxShares, Errors.SlippageCheckFailed(maxShares, shares));
+
+        return shares;
+    }
+
+    /// @inheritdoc IERC4626
+    function redeem(uint256 _shares, address _receiver, address _owner) public override whenNotPaused nonReentrant returns (uint256) {
+        uint256 maxShares = maxRedeem(_owner);
+        require(_shares <= maxShares, ERC4626ExceededMaxRedeem(_owner, _shares, maxShares));
+
+        uint256 minAssets = previewRedeem(_shares);
+        (uint256 assets, ) = _withdraw(msg.sender, _receiver, _owner, minAssets, _shares, true);
+
+        require(assets >= minAssets, Errors.SlippageCheckFailed(minAssets, assets));
+
+        return assets;
+    }
+
+    /// @inheritdoc IMultistrategy
+    function requestCredit() external whenNotPaused onlyActiveStrategy(msg.sender) returns (uint256) {
+        return _requestCredit();
+    }
+
+    /// @inheritdoc IMultistrategy
+    function strategyReport(uint256 _debtRepayment, uint256 _gain, uint256 _loss) 
+        external 
+        whenNotPaused
+        onlyActiveStrategy(msg.sender)
+    {
+        _report(_debtRepayment, _gain, _loss);
+    }
+
+    /// @inheritdoc IMultistrategy
+    function rescueToken(address _token, address _recipient) external onlyGuardian {
+        _rescueToken(_token, _recipient);
+    }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                            INTERNAL CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Internal view function to retrieve the current asset balance of the contract.
+    /// @return The current balance of the asset of the contract.
+    function _balance() internal view returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this));
+    }
+
+    /// @notice Converts a given amount of assets to shares, with specified rounding.
+    /// @param _assets The amount of assets to convert to shares.
+    /// @param rounding The rounding direction to apply during the conversion.
+    /// @return The number of shares corresponding to the given amount of assets.
+    function _convertToShares(uint256 _assets, Math.Rounding rounding) internal view override returns (uint256) {
+        return _assets.mulDiv(totalSupply() + 10 ** _decimalsOffset(), _freeFunds() + 1, rounding);
+    }
+
+    /// @notice Convert a given amount of shares to assets, with specified rounding.
+    /// @param _shares The number of shares to convert to assets.
+    /// @param rounding The rounding direction to apply during the conversion.
+    /// @return The amount of assets corresponding to the given number of shares.
+    function _convertToAssets(uint256 _shares, Math.Rounding rounding) internal view override returns (uint256) {
+        return _shares.mulDiv(_freeFunds() + 1, totalSupply() + 10 ** _decimalsOffset(), rounding);
+    }
+
+    /// @notice Calculates the available credit for a strategy.
+    /// 
+    /// This function performs the following actions:
+    /// - Determines the total assets and debt limits for both the multi-strategy and the specific strategy.
+    /// - Checks if the strategy or the multi-strategy has exceeded their respective debt limits, in which case no new credit is offered.
+    /// - Calculates the potential credit as the difference between the strategy's debt limit and its current debt.
+    /// - Limits the potential credit by the maximum available credit of the multi-strategy.
+    /// - Ensures the potential credit is within the strategy's minimum and maximum debt delta bounds.
+    /// - Returns zero if the available credit is below the strategy's minimum debt delta.
+    /// - Returns the available credit, ensuring it does not exceed the strategy's maximum debt delta.
+    /// 
+    /// @param _strategy The address of the strategy for which to determine the available credit.
+    /// @return The amount of credit available for the given strategy.
+    function _creditAvailable(address _strategy) internal view returns (uint256) {
+        uint256 mTotalAssets = totalAssets();
+        uint256 mDebtLimit = debtRatio.mulDiv(mTotalAssets, MAX_BPS);
+        uint256 mTotalDebt = totalDebt;
+
+        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(mTotalAssets, MAX_BPS);
+        uint256 sTotalDebt = strategies[_strategy].totalDebt;
+        uint256 sMinDebtDelta = strategies[_strategy].minDebtDelta;
+        uint256 sMaxDebtDelta = strategies[_strategy].maxDebtDelta;
+
+        if(sTotalDebt >= sDebtLimit || mTotalDebt >= mDebtLimit){
+            return 0;
+        }
+
+        uint256 credit = sDebtLimit - sTotalDebt;
+        uint256 maxAvailableCredit = mDebtLimit - mTotalDebt;
+        credit = Math.min(credit, maxAvailableCredit);
+
+        // Bound to the minimum and maximum borrow limits
+        if(credit < sMinDebtDelta) {
+            return 0;
+        } else {
+            return Math.min(credit, sMaxDebtDelta);
+        }
+    }
+
+    /// @notice Calculates the excess debt of a strategy.
+    /// 
+    /// This function performs the following actions:
+    /// - If the overall debt ratio is zero, it returns the total debt of the strategy as excess debt.
+    /// - Calculates the strategy's debt limit based on its debt ratio and the total assets.
+    /// - If the strategy's total debt is less than or equal to its debt limit, it returns zero indicating no excess debt.
+    /// - If the strategy's total debt exceeds its debt limit, it returns the difference as the excess debt.
+    /// 
+    /// @param _strategy The address of the strategy for which to determine the debt excess.
+    /// @return The amount of excess debt for the given strategy.
+    function _debtExcess(address _strategy) internal view returns (uint256) {
+        if(debtRatio == 0) {
+            return strategies[_strategy].totalDebt;
+        }
+
+        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(totalAssets(), MAX_BPS);
+        uint256 sTotalDebt = strategies[_strategy].totalDebt;
+
+        if(sTotalDebt <= sDebtLimit) {
+            return 0;
+        } else {
+            return sTotalDebt - sDebtLimit;
+        }
+    }
+    
+    /// @notice Calculates the free funds available in the contract.
+    /// @return The amount of free funds available.
+    function _freeFunds() internal view returns (uint256) {
+        return totalAssets() - _calculateLockedProfit();
+    }
+
+    /// @notice Calculate the current locked profit.
+    /// 
+    /// This function performs the following actions:
+    /// - Calculates the locked funds ratio based on the time elapsed since the last report and the locked profit degradation rate.
+    /// - If the locked funds ratio is less than the degradation coefficient, it computes the remaining locked profit by reducing it proportionally.
+    /// - If the locked funds ratio is greater than or equal to the degradation coefficient, it returns zero indicating no locked profit remains.
+    /// 
+    /// @return The calculated current locked profit.
+    function _calculateLockedProfit() internal view returns (uint256) {
+        uint256 lockedFundsRatio = (block.timestamp - lastReport) * LOCKED_PROFIT_DEGRADATION;
+
+        if(lockedFundsRatio < DEGRADATION_COEFFICIENT) {
+            return lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, DEGRADATION_COEFFICIENT);
+        }
+        return 0;
+    }
+
+    /**
+     * @notice Calculates the current profit and loss (PnL) across all active strategies.
+     * 
+     * This function performs the following actions:
+     * - Iterates through the `withdrawOrder` array, which defines the order in which strategies are withdrawn from.
+     * - For each strategy in the `withdrawOrder`:
+     *   - If the strategy address is zero, it breaks the loop, indicating the end of the list.
+     *   - If the strategy has no debt, it skips to the next strategy.
+     *   - Otherwise, it retrieves the current profit and loss (PnL) from the strategy by calling `currentPnL`.
+     *   - Adds the strategy's profit to the total profit, after deducting the performance fee.
+     *   - Adds the strategy's loss to the total loss.
+     * - Returns the total profit and total loss across all active strategies.
+     * 
+     * @return totalProfit The total profit across all active strategies, after deducting the performance fee.
+     * @return totalLoss The total loss across all active strategies.
+     */
+    function _currentPnL() internal view returns (uint256, uint256) {
+        if (activeStrategies == 0) return (0, 0);
+        uint256 totalProfit = 0;
+        uint256 totalLoss = 0;
+
+        for(uint8 i = 0; i < activeStrategies; ++i){
+            address strategy = withdrawOrder[i];
+            if(strategy == address(0)) break;
+            if(strategies[strategy].totalDebt == 0) continue;
+
+            (uint256 gain, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
+            totalProfit += gain.mulDiv(MAX_BPS - performanceFee, MAX_BPS);
+            totalLoss += loss;
+        }
+
+        return (totalProfit, totalLoss);
+    }
+
+    function _decimalsOffset() internal view override returns (uint8) {
+        return DECIMALS_OFFSET;
+    }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                            INTERNAL NON-CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Handles deposits into the contract.
+    /// 
+    /// This function performs the following actions:
+    /// - Validates that the receiver address is not zero or the contract address itself.
+    /// - Ensures that the deposited amount is greater than zero.
+    /// - Transfers the assets from the caller to the contract.
+    /// - Mints the corresponding shares for the receiver.
+    /// - Emits a `Deposit` event with the caller, receiver, amount of assets, and number of shares.
+    /// 
+    /// @param _caller The address of the entity initiating the deposit.
+    /// @param _receiver The address of the recipient to receive the shares.
+    /// @param _assets The amount of assets being deposited.
+    /// @param _shares The number of shares to be minted for the receiver.
+    function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
+        require(_receiver != address(0) && _receiver != address(this), Errors.InvalidAddress(_receiver));
+        require(_assets > 0, Errors.ZeroAmount(_assets));
+
+        IERC20(asset()).safeTransferFrom(_caller, address(this), _assets);
+        _mint(_receiver, _shares);
+
+        emit Deposit(_caller, _receiver, _assets, _shares);
+    }
+
+    /// @notice Handles withdrawals from the contract.
+    /// 
+    /// This function performs the following actions:
+    /// - If the caller is not the owner, it checks and spends the allowance for the withdrawal.
+    /// - Ensures that the amount to be withdrawn is greater than zero.
+    /// - If the requested withdrawal amount exceeds the available balance, it withdraws the necessary amount from the strategies in the withdrawal order.
+    ///   - Iterates through the withdrawal queue, withdrawing from each strategy until the balance requirement is met or the queue is exhausted.
+    ///   - Updates the total debt of both the strategy and the contract as assets are withdrawn.
+    ///   - Requests the strategy to report, accounting for potential gains or losses.
+    /// - Reverts if the withdrawal process does not result in sufficient balance.
+    /// - Burns the corresponding shares and transfers the requested assets to the receiver.
+    /// - Emits a `Withdraw` event with the caller, receiver, owner, amount of assets withdrawn, and shares burned.
+    /// 
+    /// @param _caller The address of the entity initiating the withdrawal.
+    /// @param _receiver The address of the recipient to receive the withdrawn assets.
+    /// @param _owner The address of the owner of the shares being withdrawn.
+    /// @param _assets The amount of assets to withdraw.
+    /// @param _shares The amount of shares to burn.
+    /// @param _consumeAllShares True if all `_shares` should be used to withdraw. False if it should withdraw just `_assets`.
+    /// @return The number of assets withdrawn and the shares burned as a result of the withdrawal.
+    function _withdraw(
+        address _caller,
+        address _receiver,
+        address _owner,
+        uint256 _assets,
+        uint256 _shares,
+        bool _consumeAllShares
+    ) internal returns (uint256, uint256) {
+        require(_shares > 0, Errors.ZeroAmount(_shares));
+
+        if (_caller != _owner) {
+            _spendAllowance(_owner, _caller, _shares);
+        }
+
+        uint256 assets = _consumeAllShares ? _convertToAssets(_shares, Math.Rounding.Floor) : _assets;
+
+        if(assets > _balance()) {
+            for(uint8 i = 0; i <= withdrawOrder.length; ++i){
+                address strategy = withdrawOrder[i];
+
+                // We reached the end of the withdraw queue and assets are still higher than the balance
+                require(strategy != address(0), Errors.InsufficientBalance(assets, _balance()));
+
+                // We can't withdraw from a strategy more than what it has asked as credit.
+                uint256 assetsToWithdraw = Math.min(assets - _balance(), strategies[strategy].totalDebt);
+                if(assetsToWithdraw == 0) continue;
+
+                uint256 withdrawn = IStrategyAdapter(strategy).withdraw(assetsToWithdraw);
+                strategies[strategy].totalDebt -= withdrawn;
+                totalDebt -= withdrawn;
+
+                IStrategyAdapter(strategy).askReport();
+
+                // Update assets, as a loss could have been reported and user should get less assets for
+                // the same amount of shares.
+                if(_consumeAllShares) assets = _convertToAssets(_shares, Math.Rounding.Floor);
+                if(assets <= _balance()) break;
+            }
+        }
+
+        uint256 shares = _consumeAllShares ? _shares : _convertToShares(assets, Math.Rounding.Ceil);
+        _burn(_owner, shares);
+        IERC20(asset()).safeTransfer(_receiver, assets);
+
+        emit Withdraw(_caller, _receiver, _owner, assets, shares);
+
+        return (assets, shares);
+    }
+
+    /// @notice Requests credit for an active strategy.
+    /// 
+    /// This function performs the following actions:
+    /// - Calculates the available credit for the strategy using `_creditAvailable`.
+    /// - If credit is available, it updates the total debt for the strategy and the multistrategy contract.
+    /// - Transfers the calculated credit amount to the strategy.
+    ///
+    /// Emits a `CreditRequested` event.
+    ///
+    /// @dev This function should be called only by active strategies when they need to request credit.
+    function _requestCredit() internal returns (uint256){
+        uint256 credit = _creditAvailable(msg.sender);
+
+        if(credit > 0) {
+            strategies[msg.sender].totalDebt += credit;
+            totalDebt += credit;
+            IERC20(asset()).safeTransfer(msg.sender, credit);
+            emit CreditRequested(msg.sender, credit);
+        }
+        
+        return credit;
+    }
+
+    /// @notice Reports the performance of a strategy.
+    /// 
+    /// This function performs the following actions:
+    /// - Validates that the reporting strategy does not claim both a gain and a loss simultaneously.
+    /// - Checks that the strategy has sufficient tokens to cover the debt repayment and the gain.
+    /// - If there is a loss, it realizes the loss.
+    /// - Calculates and deducts the performance fee from the gain.
+    /// - Determines the excess debt of the strategy.
+    /// - Adjusts the strategy's and contract's total debt accordingly.
+    /// - Calculates and updates the new locked profit after accounting for any losses.
+    /// - Updates the reporting timestamps for the strategy and the contract.
+    /// - Transfers the debt repayment and the gains to this contract.
+    ///
+    /// Emits a `StrategyReported` event.
+    ///
+    /// @param _debtRepayment The amount of debt being repaid by the strategy.
+    /// @param _gain The amount of profit reported by the strategy.
+    /// @param _loss The amount of loss reported by the strategy.
+    function _report(uint256 _debtRepayment, uint256 _gain, uint256 _loss) internal {
+        uint256 strategyBalance = IERC20(asset()).balanceOf(msg.sender);
+        require(!(_gain > 0 && _loss > 0), Errors.GainLossMismatch());
+        require(strategyBalance >= _debtRepayment + _gain, Errors.InsufficientBalance(strategyBalance, _debtRepayment + _gain));
+
+        uint256 profit = 0;
+        uint256 feesCollected = 0;
+        if(_loss > 0) _reportLoss(msg.sender, _loss);
+        if(_gain > 0) {
+            strategies[msg.sender].totalGain += _gain;
+            feesCollected = _gain.mulDiv(performanceFee, MAX_BPS);
+            profit = _gain - feesCollected;
+        } 
+
+        uint256 debtToRepay = Math.min(_debtRepayment, _debtExcess(msg.sender));
+        if(debtToRepay > 0) {
+            strategies[msg.sender].totalDebt -= debtToRepay;
+            totalDebt -= debtToRepay;
+        }
+        
+        uint256 newLockedProfit = _calculateLockedProfit() + profit;
+        if(newLockedProfit > _loss) {
+            lockedProfit = newLockedProfit - _loss;
+        } else {
+            lockedProfit = 0;
+        }
+
+        strategies[msg.sender].lastReport = block.timestamp;
+        lastReport = block.timestamp;
+
+        if(debtToRepay + _gain > 0) IERC20(asset()).safeTransferFrom(msg.sender, address(this), debtToRepay + _gain);
+        if(feesCollected > 0) IERC20(asset()).safeTransfer(protocolFeeRecipient, feesCollected);
+
+        emit StrategyReported(msg.sender, debtToRepay, profit, _loss);
+    }
+
+    /// @notice Reports a loss for a strategy.
+    /// 
+    /// This function performs the following actions:
+    /// - Validates that the loss reported by the strategy does not exceed its total debt.
+    /// - Updates the strategy's total loss by adding the reported loss.
+    /// - Reduces the strategy's total debt by the reported loss.
+    /// - Adjusts the contract's total debt by reducing it with the reported loss.
+    ///
+    /// @param _strategy The address of the strategy reporting the loss.
+    /// @param _loss The amount of loss reported by the strategy.
+    function _reportLoss(address _strategy, uint256 _loss) internal {
+        require(_loss <= strategies[_strategy].totalDebt, Errors.InvalidStrategyLoss());
+
+        strategies[_strategy].totalLoss += _loss;
+        strategies[_strategy].totalDebt -= _loss;
+        totalDebt -= _loss;
+    }
+
+    /// @notice Rescues tokens from the contract.
+    /// 
+    /// This function performs the following actions:
+    /// - Retrieves the balance of the specified token in the contract.
+    /// - Transfers the entire balance of the specified token to the recipient address.
+    ///
+    /// @param _token The address of the token to be rescued.
+    /// @param _recipient The address to receive the rescued tokens.
+    function _rescueToken(address _token, address _recipient) internal {
+        require(_token != asset(), Errors.InvalidAddress(_token));
+
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(_recipient, amount);
+    }
+}
