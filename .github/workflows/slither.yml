@@ -15,9 +15,9 @@ jobs:
         with:
           version: stable
 
-      - name: Install deps & build (Soldeer + Foundry)
+      - name: Install dependencies
         run: |
           forge soldeer update
 
-      - name: Run Slither (skip compile)
+      - name: Run Slither
         uses: crytic/slither-action@v0.4.1

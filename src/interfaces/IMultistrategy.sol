@@ -5,15 +5,6 @@ pragma solidity ^0.8.27;
 import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
 
 interface IMultistrategy is IMultistrategyManageable {
-    /// @notice Emitted when an account has made a deposit.
-    /// @param amount Amount of asset that has been deposited.
-    /// @param recipient Address that will receive the receipt tokens.
-    event Deposit(uint256 amount, address indexed recipient);
-
-    /// @notice Emitted when an account has made a withdraw.
-    /// @param amount Amount of shares that have been withdrawn.
-    event Withdraw(uint256 amount);
-
     /// @notice Emitted when a strategy has requested a credit.
     /// @param strategy Address of the strategy that requested the credit.
     /// @param amount Amount of credit that has been granted to the strategy.
@@ -61,9 +52,4 @@ interface IMultistrategy is IMultistrategyManageable {
     ///                to this Multistrategy as earnings. 
     /// @param _loss Amount that the strategy has realized as a loss since the last report. 
     function strategyReport(uint256 _debtRepayment, uint256 _gain, uint256 _loss) external;
-
-    /// @notice Emergency function to rescue tokens not related to the Multistrategy sent to the contract by mistake.
-    /// @param token Address of the token that will be rescued.
-    /// @param recipient Address of who will receive the tokens.
-    function rescueToken(address token, address recipient) external;
 }
