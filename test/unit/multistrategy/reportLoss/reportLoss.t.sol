@@ -29,7 +29,6 @@ contract ReportLoss_Integration_Concrete_Test is MultistrategyHarness_Base_Test 
     }
 
     modifier whenActiveStrategy() {
-        multistrategy.addStrategy(address(strategy), 5_000, 100 ether, 100_000 ether);
         _;
     }
 

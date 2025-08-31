@@ -3,7 +3,6 @@ pragma solidity >=0.8.20 <0.9.0;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
-import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
@@ -12,7 +11,7 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
 
     function test_RevertWhen_ContractIsPaused() external {
         // Pause the multistrategy
-        multistrategy.pause();
+        vm.prank(users.manager); multistrategy.pause();
 
         // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
@@ -28,8 +27,8 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenContractNotPaused    
     {   
         // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.StrategyNotActive.selector, users.owner));
-        multistrategy.requestCredit();
+        vm.expectRevert(abi.encodeWithSelector(Errors.StrategyNotActive.selector, users.manager));
+        vm.prank(users.manager); multistrategy.requestCredit();
     }
 
     modifier whenCallerActiveStrategy() {
@@ -45,8 +44,7 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenCallerActiveStrategy
     {   
         //Set the debtRatio to 0 so there isn't any credit available
-        multistrategy.setStrategyDebtRatio(address(strategy), 0);
-
+        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 0);
         vm.prank(address(strategy)); uint256 actualCredit = multistrategy.requestCredit();
 
         uint256 expectedCredit = 0;
