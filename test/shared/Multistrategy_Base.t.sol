@@ -32,6 +32,10 @@ contract Multistrategy_Base_Test is Base_Test {
         vm.label({ account: address(multistrategy), newLabel: "Multistrategy" });
     }
 
+    function _createAdapter() internal returns (MockStrategyAdapter adapter) {
+        vm.prank(users.manager); adapter = new MockStrategyAdapter(address(multistrategy), address(dai));
+    }
+
     function _createAndAddAdapter(uint256 _debtRatio, uint256 _minDebtDelta, uint256 _maxDebtDelta) internal returns (MockStrategyAdapter adapter) {
         vm.prank(users.manager); adapter = new MockStrategyAdapter(address(multistrategy), address(dai));
         vm.prank(users.owner); multistrategy.addStrategy(address(adapter), _debtRatio, _minDebtDelta, _maxDebtDelta);

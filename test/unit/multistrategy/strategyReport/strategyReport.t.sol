@@ -4,7 +4,6 @@ pragma solidity >=0.8.20 <0.9.0;
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 import { IMultistrategy } from "interfaces/IMultistrategy.sol";
-import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 import { Errors } from "src/libraries/Errors.sol";

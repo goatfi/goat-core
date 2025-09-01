@@ -11,8 +11,8 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     uint256 amountToWithdraw;
 
     // Addresses for the mock strategies
-    MockStrategyAdapter strategy_one;
-    MockStrategyAdapter strategy_two;
+    MockStrategyAdapter strategyOne;
+    MockStrategyAdapter strategyTwo;
 
     function test_RevertWhen_ContractIsPaused() external {
         // Pause the multistrategy
@@ -56,11 +56,11 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     modifier whenMultistrategyBalanceLowerThanWithdrawAmount() {
-        strategy_one = _createAndAddAdapter(5_000, 0, type(uint256).max);
-        strategy_two = _createAndAddAdapter(2_000, 0, type(uint256).max);
+        strategyOne = _createAndAddAdapter(5_000, 0, type(uint256).max);
+        strategyTwo = _createAndAddAdapter(2_000, 0, type(uint256).max);
 
-        vm.prank(users.manager); strategy_one.requestCredit();
-        vm.prank(users.manager); strategy_two.requestCredit();
+        vm.prank(users.manager); strategyOne.requestCredit();
+        vm.prank(users.manager); strategyTwo.requestCredit();
         _;
     }
 
@@ -71,7 +71,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount
     {
-        strategy_two.setStakingSlippage(5_000);
+        strategyTwo.setStakingSlippage(5_000);
 
         amountToWithdraw = 1000 ether;
 
@@ -88,8 +88,8 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount
     {   
-        vm.prank(users.manager); strategy_one.setSlippageLimit(200);
-        strategy_one.setStakingSlippage(100);
+        vm.prank(users.manager); strategyOne.setSlippageLimit(200);
+        strategyOne.setStakingSlippage(100);
 
         amountToWithdraw = 800 ether;
 
@@ -105,10 +105,10 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount 
     {   
-        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy_one), 1_000);
-        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy_two), 1_000);
-        vm.prank(users.manager); strategy_one.sendReport(type(uint256).max);
-        vm.prank(users.manager); strategy_two.sendReport(type(uint256).max);
+        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategyOne), 1_000);
+        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategyTwo), 1_000);
+        vm.prank(users.manager); strategyOne.sendReport(type(uint256).max);
+        vm.prank(users.manager); strategyTwo.sendReport(type(uint256).max);
         for(uint i = 0; i < 8; ++i) {
             MockStrategyAdapter newAdapter = _createAndAddAdapter(1_000, 0 , 1000 ether);
             vm.prank(users.manager); newAdapter.requestCredit();
@@ -125,10 +125,10 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
 
     modifier whenNotEnoughBalanceToCoverWithdraw() {
         // Remove slippage protection
-        vm.prank(users.manager); strategy_two.setSlippageLimit(10_000);
+        vm.prank(users.manager); strategyTwo.setSlippageLimit(10_000);
         // Set the staking slippage to 50%. If a user wants to withdraw 1000 tokens, the staking
         // will only return 500 tokens
-        (strategy_two).setStakingSlippage(5_000);
+        (strategyTwo).setStakingSlippage(5_000);
         _;
     }
 
@@ -180,12 +180,12 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "withdraw, multistrategy balance");
 
         // Assert strategy_one assets.
-        uint256 actualStrategyOneAssets = strategy_one.totalAssets();
+        uint256 actualStrategyOneAssets = strategyOne.totalAssets();
         uint256 expectedStrategyOneAssets = 0;
         assertEq(actualStrategyOneAssets, expectedStrategyOneAssets, "withdraw, strategy one assets");
 
         // Assert strategy_two assets.
-        uint256 actualStrategyTwoAssets = strategy_two.totalAssets();
+        uint256 actualStrategyTwoAssets = strategyTwo.totalAssets();
         uint256 expectedStrategyTwoAssets = 0;
         assertEq(actualStrategyTwoAssets, expectedStrategyTwoAssets, "withdraw, strategy two assets");
 
@@ -195,12 +195,12 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyDebt, expectedMultistrategyDebt, "withdraw, multistrategy total debt");
 
         // Assert strategy_one totalDebt
-        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategy_one)).totalDebt;
+        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
         uint256 expectedStrategyOneDebt = 0;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "withdraw, strategy one debt");
 
         // Assert strategy_two totalDebt
-        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategy_two)).totalDebt;
+        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategyTwo)).totalDebt;
         uint256 expectedStrategyTwoDebt = 0 ether;
         assertEq(actualStrategyTwoDebt, expectedStrategyTwoDebt, "withdraw, strategy two debt");
     }
@@ -220,7 +220,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         vm.prank(users.bob); multistrategy.withdraw(amountToWithdraw, users.bob, users.bob);
 
         // Assert strategy one has no debt
-        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategy_one)).totalDebt;
+        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
         uint256 expectedStrategyOneDebt = 0;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "withdraw, strategy one debt");
 
@@ -244,12 +244,12 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "withdraw, multistrategy balance");
 
         // Assert strategy_one assets.
-        uint256 actualStrategyOneAssets = strategy_one.totalAssets();
+        uint256 actualStrategyOneAssets = strategyOne.totalAssets();
         uint256 expectedStrategyOneAssets = 0;
         assertEq(actualStrategyOneAssets, expectedStrategyOneAssets, "withdraw, strategy one assets");
 
         // Assert strategy_two assets.
-        uint256 actualStrategyTwoAssets = strategy_two.totalAssets();
+        uint256 actualStrategyTwoAssets = strategyTwo.totalAssets();
         uint256 expectedStrategyTwoAssets = 100 ether;
         assertEq(actualStrategyTwoAssets, expectedStrategyTwoAssets, "withdraw, strategy two assets");
 
@@ -259,12 +259,12 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyDebt, expectedMultistrategyDebt, "withdraw, multistrategy total debt");
 
         // Assert strategy_one totalDebt
-        actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategy_one)).totalDebt;
+        actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
         expectedStrategyOneDebt = 0;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "withdraw, strategy one debt");
 
         // Assert strategy_two totalDebt
-        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategy_two)).totalDebt;
+        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategyTwo)).totalDebt;
         uint256 expectedStrategyTwoDebt = 100 ether;
         assertEq(actualStrategyTwoDebt, expectedStrategyTwoDebt, "withdraw, strategy two debt");
     }
@@ -298,12 +298,12 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "withdraw, multistrategy balance");
 
         // Assert strategy_one assets
-        uint256 actualStrategyOneAssets = strategy_one.totalAssets();
+        uint256 actualStrategyOneAssets = strategyOne.totalAssets();
         uint256 expectedStrategyOneAssets = 0;
         assertEq(actualStrategyOneAssets, expectedStrategyOneAssets, "withdraw, strategy one assets");
 
         // Assert strategy_two assets
-        uint256 actualStrategyTwoAssets = strategy_two.totalAssets();
+        uint256 actualStrategyTwoAssets = strategyTwo.totalAssets();
         uint256 expectedStrategyTwoAssets = 200 ether;
         assertEq(actualStrategyTwoAssets, expectedStrategyTwoAssets, "withdraw, strategy two assets");
 
@@ -313,20 +313,20 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyDebt, expectedMultistrategyDebt, "withdraw, multistrategy total debt");
 
         // Assert strategy_one totalDebt
-        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategy_one)).totalDebt;
+        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
         uint256 expectedStrategyOneDebt = 0;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "withdraw, strategy one debt");
 
         // Assert strategy_two totalDebt
-        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategy_two)).totalDebt;
+        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategyTwo)).totalDebt;
         uint256 expectedStrategyTwoDebt = 200 ether;
         assertEq(actualStrategyTwoDebt, expectedStrategyTwoDebt, "withdraw, strategy two debt");
     }
 
     modifier whenMultistrategyBalanceHigherOrEqualThanWithdrawAmount() {
-        strategy_one = _createAndAddAdapter(5_000, 0, type(uint256).max);
+        strategyOne = _createAndAddAdapter(5_000, 0, type(uint256).max);
 
-        vm.prank(users.manager); strategy_one.requestCredit();
+        vm.prank(users.manager); strategyOne.requestCredit();
         _;
     }
 
@@ -358,7 +358,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "withdraw, multistrategy balance");
 
         // Assert strategy_one assets
-        uint256 actualStrategyOneAssets = strategy_one.totalAssets();
+        uint256 actualStrategyOneAssets = strategyOne.totalAssets();
         uint256 expectedStrategyOneAssets = 500 ether;
         assertEq(actualStrategyOneAssets, expectedStrategyOneAssets, "withdraw, strategy one assets");
 
@@ -368,7 +368,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyDebt, expectedMultistrategyDebt, "withdraw, multistrategy total debt");
 
         // Assert strategy_one totalDebt
-        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategy_one)).totalDebt;
+        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
         uint256 expectedStrategyOneDebt = 500 ether;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "withdraw, strategy one debt");
     }
