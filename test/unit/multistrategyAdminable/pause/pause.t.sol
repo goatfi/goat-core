@@ -30,7 +30,7 @@ contract Pause_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         // Expect a revert.
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        vm.prank(users.owner); multistrategy.pause();
+        vm.prank(users.guardian); multistrategy.pause();
     }
 
     modifier whenContractIsUnpaused() {

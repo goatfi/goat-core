@@ -547,19 +547,4 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         strategies[_strategy].totalDebt -= _loss;
         totalDebt -= _loss;
     }
-
-    /// @notice Rescues tokens from the contract.
-    /// 
-    /// This function performs the following actions:
-    /// - Retrieves the balance of the specified token in the contract.
-    /// - Transfers the entire balance of the specified token to the recipient address.
-    ///
-    /// @param _token The address of the token to be rescued.
-    /// @param _recipient The address to receive the rescued tokens.
-    function _rescueToken(address _token, address _recipient) internal {
-        require(_token != asset(), Errors.InvalidAddress(_token));
-
-        uint256 amount = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).safeTransfer(_recipient, amount);
-    }
 }

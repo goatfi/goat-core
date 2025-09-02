@@ -87,4 +87,7 @@ contract MockStrategyAdapter is StrategyAdapter {
     function _availableLiquidity() internal override view returns(uint256) {
         return vault.totalAssets();
     }
+
+    /// @dev Needed for the Test Coverage to ignore it.
+    function testA() public {}
 }

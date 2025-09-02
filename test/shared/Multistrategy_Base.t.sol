@@ -47,4 +47,7 @@ contract Multistrategy_Base_Test is Base_Test {
         vm.prank(_user); dai.approve(address(multistrategy), _amount);
         vm.prank(_user); multistrategy.deposit(_amount, _user);
     }
+
+    /// @dev Needed for the Test Coverage to ignore it.
+    function testA() public override {}
 }

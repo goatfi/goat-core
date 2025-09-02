@@ -42,4 +42,7 @@ abstract contract Base_Test is Test {
     }
 
     function deployMultistrategy() internal virtual {}
+
+    /// @dev Needed for the Test Coverage to ignore it.
+    function testA() public virtual {}
 }

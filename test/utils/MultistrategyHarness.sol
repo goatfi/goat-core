@@ -38,4 +38,7 @@ contract MultistrategyHarness is Multistrategy {
     function profitUnlockTime() external pure returns (uint256) {
         return PROFIT_UNLOCK_TIME;
     }
+
+    /// @dev Needed for the Test Coverage to ignore it.
+    function testA() public {}
 }

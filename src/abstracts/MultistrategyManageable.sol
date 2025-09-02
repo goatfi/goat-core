@@ -277,7 +277,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
             if(strategy != address(0)) {
                 if(strategies[strategy].activation == 0) return false;
                 // Start to check on the next strategy
-                for(uint8 j = 0; j < MAXIMUM_STRATEGIES; ++j) {
+                for(uint8 j = i + 1; j < MAXIMUM_STRATEGIES; ++j) {
                     // Check that the strategy isn't duplicate
                     if(i != j && strategy == _strategies[j]) return false;
                 }
@@ -286,7 +286,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
                 for(uint8 j = i + 1; j < MAXIMUM_STRATEGIES; ++j) {
                     if(_strategies[j] != address(0)) return false;
                 }
-                return true;
+                break;
             }
         }
         return true;

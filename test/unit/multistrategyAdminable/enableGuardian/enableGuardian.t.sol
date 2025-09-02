@@ -4,7 +4,6 @@ pragma solidity >=0.8.20 <0.9.0;
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { IMultistrategyAdminable } from "interfaces/IMultistrategyAdminable.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
-import { Errors } from "src/libraries/Errors.sol";
 
 contract EnableGuardian_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_CallerNotOwner() external {

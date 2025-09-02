@@ -72,4 +72,7 @@ contract MockERC4626 is ERC4626 {
             ++afterDepositHookCalledCounter;
         }
     }
+
+    /// @dev Needed for the Test Coverage to ignore it.
+    function testA() public {}
 }

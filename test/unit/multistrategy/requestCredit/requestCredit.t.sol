@@ -11,7 +11,7 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
 
     function test_RevertWhen_ContractIsPaused() external {
         // Pause the multistrategy
-        vm.prank(users.manager); multistrategy.pause();
+        vm.prank(users.guardian); multistrategy.pause();
 
         // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));

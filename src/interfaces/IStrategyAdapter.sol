@@ -34,7 +34,7 @@ interface IStrategyAdapter {
 
     /// @notice Requests a credit to the multistrategy. The multistrategy will send the
     /// maximum amount of credit available for this strategy.
-    function requestCredit() external;
+    function requestCredit() external returns(uint256);
 
     /// @notice Sends a report to the Multistrategy of any gain or loss this strategy has
     ///         made along an amount to be withdrawn and be used for debt repayment.

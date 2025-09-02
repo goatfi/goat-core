@@ -84,9 +84,9 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IStrategyAdapter
-    function requestCredit() external onlyOwner whenNotPaused {
-        uint256 credit = IMultistrategy(multistrategy).requestCredit();
-        if(credit > 0) {
+    function requestCredit() external onlyOwner whenNotPaused returns (uint256 creditRequested) {
+        creditRequested = IMultistrategy(multistrategy).requestCredit();
+        if(creditRequested > 0) {
             _deposit();
         }
     }

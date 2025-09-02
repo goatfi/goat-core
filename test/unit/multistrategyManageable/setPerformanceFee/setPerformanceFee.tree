@@ -1,0 +1,8 @@
+setPerformanceFee.t.sol
+├── when the caller is not the owner
+│   └── it should revert
+└── when the caller is the owner
+    ├── when the performance fee is above the maximum allowed
+    │   └── it should revert with ExcessiveFee error
+    └── when the performance fee is within the allowed range
+        └── it should set the performance fee and emit the PerformanceFeeSet event

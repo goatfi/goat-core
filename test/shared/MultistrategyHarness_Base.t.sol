@@ -32,6 +32,10 @@ contract MultistrategyHarness_Base_Test is Base_Test {
         vm.label({ account: address(multistrategy), newLabel: "Multistrategy" });
     }
 
+    function _createAdapter() internal returns (MockStrategyAdapter adapter) {
+        vm.prank(users.manager); adapter = new MockStrategyAdapter(address(multistrategy), address(dai));
+    }
+
     function _createAndAddAdapter(uint256 _debtRatio, uint256 _minDebtDelta, uint256 _maxDebtDelta) internal returns (MockStrategyAdapter adapter) {
         vm.prank(users.manager); adapter = new MockStrategyAdapter(address(multistrategy), address(dai));
         vm.prank(users.owner); multistrategy.addStrategy(address(adapter), _debtRatio, _minDebtDelta, _maxDebtDelta);
@@ -43,4 +47,7 @@ contract MultistrategyHarness_Base_Test is Base_Test {
         vm.prank(_user); dai.approve(address(multistrategy), _amount);
         vm.prank(_user); multistrategy.deposit(_amount, _user);
     }
+
+    /// @dev Needed for the Test Coverage to ignore it.
+    function testA() public override {}
 }

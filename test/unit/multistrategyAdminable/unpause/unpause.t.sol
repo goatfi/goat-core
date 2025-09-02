@@ -5,7 +5,6 @@ pragma solidity >=0.8.20 <0.9.0;
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
-import { Errors } from "src/libraries/Errors.sol";
 
 interface IPausable {
     event Unpaused(address account);
@@ -21,7 +20,6 @@ contract Unpause_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     modifier whenCallerIsOwner() {
-        vm.prank(users.owner);
         _;
     }
 
@@ -31,11 +29,11 @@ contract Unpause_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         // Expect a revert.
         vm.expectRevert(abi.encodeWithSelector(Pausable.ExpectedPause.selector));
-        multistrategy.unpause();
+        vm.prank(users.owner); multistrategy.unpause();
     }
 
     modifier whenContractIsPaused() {
-        multistrategy.pause();
+        vm.prank(users.guardian); multistrategy.pause();
         _;
     }
 

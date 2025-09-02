@@ -1,0 +1,5 @@
+setDepositLimit.t.sol
+├── when the caller is not the manager
+│   └── it should revert
+└── when the caller is the manager
+    └── it should set the deposit limit and emit the DepositLimitSet event

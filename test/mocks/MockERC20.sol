@@ -21,4 +21,7 @@ contract MockERC20 is IMockERC20, ERC20 {
     function burn(address from, uint256 value) public virtual {
         _burn(from, value);
     }
+
+    /// @dev Needed for the Test Coverage to ignore it.
+    function testA() public {}
 }

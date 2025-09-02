@@ -16,7 +16,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
 
     function test_RevertWhen_ContractIsPaused() external {
         // Pause the multistrategy
-        vm.prank(users.manager); multistrategy.pause();
+        vm.prank(users.guardian); multistrategy.pause();
 
         // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
@@ -35,14 +35,14 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         multistrategy.withdraw(amountToWithdraw, users.bob, users.bob);
     }
 
-    modifier whenHasCallerEnoughSharesToCoverWithdraw() {
+    modifier whenCallerHasEnoughSharesToCoverWithdraw() {
         _userDeposit(users.bob, deposit);
         _;
     }
 
     function test_RevertWhen_AmountIsZero()
         external
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
     {
         amountToWithdraw = 0;
 
@@ -67,7 +67,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_SlippageOnWithdrawGreaterThanSlippageLimit() 
         external
         whenContractNotPaused
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount
     {
@@ -84,7 +84,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_SharesSlippage()
         external
         whenContractNotPaused
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount
     {   
@@ -101,7 +101,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_Withdraw_WithdrawOrderFull() 
         external
         whenContractNotPaused
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount 
     {   
@@ -137,7 +137,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_QueueEndNoBalanceToCoverWithdraw() 
         external
         whenContractNotPaused
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount
         whenWithdrawOrderEndReached
@@ -155,7 +155,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_Withdraw_QueueEnd() 
         external
         whenContractNotPaused
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount
         whenWithdrawOrderEndReached
@@ -210,7 +210,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_Withdraw_StrategyWithNoFundsIncludedInOrder()
         external
         whenContractNotPaused
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount
     {
@@ -274,7 +274,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_Withdraw_NotReachQueueEnd()
         external
         whenContractNotPaused
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
         whenAmountGreaterThanZero
         whenMultistrategyBalanceLowerThanWithdrawAmount
     {
@@ -331,10 +331,10 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     /// @dev Test case where withdraws can be covered by the reserves in the multistrategy contract
-    function test_Withdraw_NoWithdrawProcess() 
+    function test_Withdraw_NoWithdrawProcess()
         external
         whenContractNotPaused
-        whenHasCallerEnoughSharesToCoverWithdraw
+        whenCallerHasEnoughSharesToCoverWithdraw
         whenAmountGreaterThanZero
         whenMultistrategyBalanceHigherOrEqualThanWithdrawAmount
     {
@@ -371,5 +371,49 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
         uint256 expectedStrategyOneDebt = 500 ether;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "withdraw, strategy one debt");
+    }
+
+    function test_RevertWhen_CallerNotOwnerAndAllowanceInsufficient()
+        external
+        whenContractNotPaused
+        whenCallerHasEnoughSharesToCoverWithdraw
+        whenAmountGreaterThanZero
+    {
+        amountToWithdraw = 500 ether;
+        uint256 sharesNeeded = multistrategy.previewWithdraw(amountToWithdraw);
+
+        // Allowance is 0 by default
+        vm.expectRevert(abi.encodeWithSelector(bytes4(keccak256("ERC20InsufficientAllowance(address,uint256,uint256)")), users.alice, 0, sharesNeeded));
+        vm.prank(users.alice); multistrategy.withdraw(amountToWithdraw, users.alice, users.bob);
+    }
+
+    function test_Withdraw_CallerNotOwnerWithSufficientAllowance()
+        external
+        whenContractNotPaused
+        whenCallerHasEnoughSharesToCoverWithdraw
+        whenAmountGreaterThanZero
+    {
+        amountToWithdraw = 500 ether;
+        uint256 sharesNeeded = multistrategy.previewWithdraw(amountToWithdraw);
+        uint256 initialAllowance = sharesNeeded + 100 ether; // more than needed
+
+        vm.prank(users.bob); multistrategy.approve(users.alice, initialAllowance);
+
+        uint256 initialAliceBalance = dai.balanceOf(users.alice);
+        uint256 initialBobShares = multistrategy.balanceOf(users.bob);
+
+        vm.prank(users.alice); multistrategy.withdraw(amountToWithdraw, users.alice, users.bob);
+
+        // Assert allowance decreased
+        uint256 finalAllowance = multistrategy.allowance(users.bob, users.alice);
+        assertEq(finalAllowance, initialAllowance - sharesNeeded, "allowance decrease");
+
+        // Assert alice received assets
+        uint256 finalAliceBalance = dai.balanceOf(users.alice);
+        assertEq(finalAliceBalance, initialAliceBalance + amountToWithdraw, "alice balance");
+
+        // Assert bob shares decreased
+        uint256 finalBobShares = multistrategy.balanceOf(users.bob);
+        assertEq(finalBobShares, initialBobShares - sharesNeeded, "bob shares");
     }
 }
