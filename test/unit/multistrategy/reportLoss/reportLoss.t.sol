@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.20 <0.9.0;
+pragma solidity ^0.8.27;
 
 import { MultistrategyHarness_Base_Test } from "../../../shared/MultistrategyHarness_Base.t.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";

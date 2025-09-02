@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.27;
 
 import { Test } from "forge-std/src/Test.sol";
 import { Multistrategy } from "src/Multistrategy.sol";
