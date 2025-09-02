@@ -1,0 +1,13 @@
+constructor.t.sol
+├── when asset does not match
+│   └── it should revert with AssetMismatch error
+└── when asset matches
+    ├── it should set owner
+    ├── it should set guardians
+    ├── it should set paused
+    ├── it should set multistrategy
+    ├── it should set asset
+    ├── it should set slippageLimit
+    ├── it should set name
+    ├── it should set id
+    └── it should set approval

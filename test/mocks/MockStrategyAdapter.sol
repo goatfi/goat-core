@@ -10,7 +10,7 @@ import { StrategyAdapter } from "src/abstracts/StrategyAdapter.sol";
 contract MockStrategyAdapter is StrategyAdapter {
     using SafeERC20 for IERC20;
 
-    MockERC4626 vault;
+    MockERC4626 public vault;
     uint256 slippage;
 
     constructor(
@@ -57,34 +57,48 @@ contract MockStrategyAdapter is StrategyAdapter {
     }
 
     function _deposit() internal override {
+        super._deposit();
+
         vault.deposit(_balance(), address(this));
     }
 
     function _withdraw(uint256 _amount) internal override {
+        super._withdraw(_amount);
+
         vault.withdraw(_amount, address(this), address(this));
         uint256 lostAmount = Math.mulDiv(_amount, slippage, MAX_SLIPPAGE);
         IERC20(asset).transfer(address(42069), lostAmount);
     }
 
     function _emergencyWithdraw() internal override {
+        super._emergencyWithdraw();
+
         uint256 vaultBalance = vault.balanceOf(address(this));
         vault.redeem(vaultBalance, address(this), address(this));
     }
 
     function _revokeAllowances() internal override {
+        super._revokeAllowances();
+
         IERC20(asset).forceApprove(address(vault), 0);
     }
 
     function _giveAllowances() internal override {
+        super._giveAllowances();
+
         IERC20(asset).forceApprove(address(vault), type(uint256).max);
     }
 
     function _totalAssets() internal override view returns(uint256) {
+        super._totalAssets();
+
         uint256 strategyBalance = IERC20(asset).balanceOf(address(vault));
         return strategyBalance + _balance();
     }
 
     function _availableLiquidity() internal override view returns(uint256) {
+        super._availableLiquidity();
+
         return vault.totalAssets();
     }
 
