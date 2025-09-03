@@ -67,7 +67,7 @@ contract MockStrategyAdapter is StrategyAdapter {
 
         vault.withdraw(_amount, address(this), address(this));
         uint256 lostAmount = Math.mulDiv(_amount, slippage, MAX_SLIPPAGE);
-        IERC20(asset).transfer(address(42069), lostAmount);
+        IERC20(asset).safeTransfer(address(42069), lostAmount);
     }
 
     function _emergencyWithdraw() internal override {
