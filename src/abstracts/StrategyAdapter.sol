@@ -159,41 +159,13 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     /// @param _currentAssets The current assets held by the strategy.
     /// @return gain The calculated gain.
     /// @return loss The calculated loss.
-    function _calculateGainAndLoss(uint256 _currentAssets) internal view returns (uint256, uint256) {
+    function _calculateGainAndLoss(uint256 _currentAssets) internal view returns (uint256 gain, uint256 loss) {
         uint256 totalDebt = IMultistrategy(multistrategy).strategyTotalDebt(address(this));
-        uint256 gain = 0;
-        uint256 loss = 0;
-
         if(_currentAssets >= totalDebt) {
             gain = _currentAssets - totalDebt;
         } else {
             loss = totalDebt - _currentAssets;
         }
-
-        return (gain, loss);
-    }
-
-    /// @notice Calculates the amount to be withdrawn from the strategy.
-    /// 
-    /// This function performs the following actions:
-    /// - Retrieves the exceeding debt of the strategy from the multi-strategy contract.
-    /// - If there is exceeding debt and a repayment amount is specified:
-    ///   - Calculates the amount to be withdrawn to repay the exceeding debt at maximum slippage.
-    ///   - Ensures the amount to be withdrawn does not exceed the repayment amount, adding any strategy gain.
-    /// - If there is no exceeding debt or no repayment amount, returns the strategy gain as the amount to be withdrawn.
-    ///   - Note that slippage calculations are not applied here as any slippage would be considered a loss and subtracted from the gain.
-    /// 
-    /// @param _repayAmount The amount to be repaid.
-    /// @param _strategyGain The gain of the strategy.
-    /// @return The amount to be withdrawn from the strategy.
-    function _calculateAmountToBeWithdrawn(uint256 _repayAmount, uint256 _strategyGain) internal view returns (uint256) {   
-        uint256 exceedingDebt = IMultistrategy(multistrategy).debtExcess(address(this));
-        if(exceedingDebt > 0 && _repayAmount > 0) {
-            if(slippageLimit == MAX_SLIPPAGE) return _repayAmount + _strategyGain;
-            return Math.min(_repayAmount, exceedingDebt) + _strategyGain;
-        } 
-
-        return _strategyGain;
     }
 
     /// @notice Returns the current balance of asset in this contract.
@@ -225,7 +197,9 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     /// @param _repayAmount The amount to be repaid to the multi-strategy.
     function _sendReport(uint256 _repayAmount) internal {
         (uint256 gain, uint256 loss) = _calculateGainAndLoss(_totalAssets());
-        uint256 toBeWithdrawn = _calculateAmountToBeWithdrawn(_repayAmount, gain);
+        uint256 exceedingDebt = IMultistrategy(multistrategy).debtExcess(address(this));
+        uint256 repayCap = Math.min(_repayAmount, exceedingDebt);
+        uint256 toBeWithdrawn = Math.min(repayCap + gain, _totalAssets());
 
         _tryWithdraw(toBeWithdrawn);
         (gain, loss) = _calculateGainAndLoss(_totalAssets());
@@ -247,9 +221,7 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     function _sendReportPanicked() internal {
         uint256 currentAssets = _balance();
         (uint256 gain, uint256 loss) = _calculateGainAndLoss(currentAssets);
-
         uint256 availableForRepay = currentAssets - gain;
-
         IMultistrategy(multistrategy).strategyReport(availableForRepay, gain, loss);
     }
 

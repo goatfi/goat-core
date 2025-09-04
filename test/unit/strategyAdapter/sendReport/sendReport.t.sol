@@ -8,6 +8,12 @@ import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
 contract SendReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
+
+    uint256 depositAmount = 1000 ether;
+    uint256 gain = 100 ether;
+    uint256 loss = 100 ether;
+    uint256 profit = 90 ether;
+
     function test_RevertWhen_CallerNotOwner() external {
         // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, users.bob));
@@ -33,160 +39,114 @@ contract SendReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         _;
     }
 
-    function test_RevertWhen_RepayAmountHigherThanTotalAssets()
-        external
-        whenCallerOwner
-        whenContractNotPaused
-    {
-        // Request a credit from the multistrategy
-        _requestCredit(1_000 ether);
-
-        // Make a loss
-        strategy.lose(100 ether);
-
-        // Set the strategy debt ratio to 0, se we can repay the debt
-        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 0);
-
-        uint256 repayAmount = 1000 ether;
-
-        // Expect a revert when the strategy manager wants to repay all the debt but it doesn't have the assets to do so
-        vm.expectRevert();
-        vm.prank(users.manager); strategy.sendReport(repayAmount);
-    }
-
     function test_RevertWhen_SlippageLimitNotRespected()
         external
         whenCallerOwner
         whenContractNotPaused
     {
-        // Set the slippage limit of the strategy to 10%
         vm.prank(users.manager); strategy.setSlippageLimit(1_000);
-
-        // Set the staking slippage to be 15%
         vm.prank(users.manager); strategy.setStakingSlippage(1_500);
 
-        // Request a credit from the multistrategy
-        _requestCredit(1_000 ether);
+        _requestCredit(depositAmount);
 
-        // Set the strategy debt ratio to 0, se we can repay the debt
         vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 0);
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 900 ether, 850 ether));
-        vm.prank(users.manager); strategy.sendReport(1_000 ether);
+        vm.prank(users.manager); strategy.sendReport(type(uint256).max);
     }
 
     modifier whenSlippageLimitRespected() {
-        // Set the slippage limit of the strategy to 0%
-        vm.prank(users.manager); strategy.setSlippageLimit(0);
-        // Set the staking slippage to be 0%
-        vm.prank(users.manager); strategy.setStakingSlippage(0);
-        // Request a credit from the multistrategy
-        _requestCredit(1_000 ether);
-        _;
-    }
-
-    modifier whenNoDebtRepayment() {
+        _requestCredit(depositAmount);
         _;
     }
 
     modifier whenStrategyMadeGain() {
-        // Makes a 100 ether gain (10%)
-        strategy.earn(100 ether);
+        strategy.earn(gain);
         _;
     }
 
     modifier whenStrategyMadeLoss() {
-        // Makes a 100 ether loss (-10%)
-        strategy.lose(100 ether);
+        strategy.lose(loss);
         _;
     }
 
-    function test_SendReport_ZeroDebtRepayWithGain() 
+    function test_SendReport_ZeroRepay_WithGain() 
         external
         whenCallerOwner
         whenContractNotPaused
         whenSlippageLimitRespected
-        whenNoDebtRepayment
         whenStrategyMadeGain
     {
         vm.prank(users.manager); strategy.sendReport(0);
 
         // Assert it has withdrawn the gain
         uint256 actualStrategyAssets = strategy.totalAssets();
-        uint256 expectedStrategyAssets = 1000 ether;
+        uint256 expectedStrategyAssets = depositAmount;
         assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
 
         // Assert it has sent the gain to the multistrategy
-        uint256 actualMultistrategyAssets = multistrategy.totalAssets();
-        uint256 expectedMultistrategyAssets = 1090 ether;
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = profit;
         assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy assets");
     }
 
-    function test_SendReport_ZeroDebtRepayWithLoss()
+    function test_SendReport_ZeroRepay_WithLoss() 
         external
         whenCallerOwner
         whenContractNotPaused
         whenSlippageLimitRespected
-        whenNoDebtRepayment
         whenStrategyMadeLoss
     {
         vm.prank(users.manager); strategy.sendReport(0);
 
         // Assert it has withdrawn the gain
         uint256 actualStrategyAssets = strategy.totalAssets();
-        uint256 expectedStrategyAssets = 900 ether;
+        uint256 expectedStrategyAssets = depositAmount - loss;
         assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
 
-        // Assert it has sent the gain to the multistrategy
-        uint256 actualMultistrategyAssets = multistrategy.totalAssets();
-        uint256 expectedMultistrategyAssets = 900 ether;
+        // Assert no assets have been sent to the multistrategy
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = 0 ether;
         assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy assets");
     }
 
-    modifier whenDebtRepayment() {
-        _;
-    }
-
-    function test_SendReport_DebtRepayNoExcessDebtWithGain()
+    function test_SendReport_RepayAll_NoExcessDebt_WithGain()
         external
         whenCallerOwner
         whenContractNotPaused
         whenSlippageLimitRespected
-        whenDebtRepayment
         whenStrategyMadeGain
     {
-        vm.prank(users.manager); strategy.sendReport(1000 ether);
+        vm.prank(users.manager); strategy.sendReport(type(uint256).max);
 
         // Assert it has withdrawn the gain
         uint256 actualStrategyAssets = strategy.totalAssets();
-        uint256 expectedStrategyAssets = 1000 ether;
+        uint256 expectedStrategyAssets = depositAmount;
         assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
 
         // Assert it has sent the gain to the multistrategy
-        uint256 actualMultistrategyAssets = multistrategy.totalAssets();
-        uint256 expectedMultistrategyAssets = 1090 ether;
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = profit;
         assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy assets");
     }
 
-    function test_SendReport_DebtRepayNoExcessDebtWithLoss()
+    function test_SendReport_RepayAll_NoExcessDebt_WithLoss()
         external
         whenCallerOwner
         whenContractNotPaused
         whenSlippageLimitRespected
-        whenDebtRepayment
         whenStrategyMadeLoss
     {
-        vm.prank(users.manager); strategy.sendReport(1000 ether);
+        vm.prank(users.manager); strategy.sendReport(type(uint256).max);
 
         // Assert it has withdrawn the gain
         uint256 actualStrategyAssets = strategy.totalAssets();
-        uint256 expectedStrategyAssets = 900 ether;
+        uint256 expectedStrategyAssets = depositAmount - loss;
         assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
 
-        // Assert it has sent the gain to the multistrategy
-        uint256 actualMultistrategyAssets = multistrategy.totalAssets();
-        uint256 expectedMultistrategyAssets = 900 ether;
+        // Assert no assets have been sent to the multistrategy
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = 0 ether;
         assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy assets");
     }
 
@@ -196,17 +156,15 @@ contract SendReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         _;
     }
 
-
-    function test_SendReport_DebtRepayExcessDebtWithGain()
+    function test_SendReport_RepayAll_WithDebtExcessDebt_WithGain()
         external
         whenCallerOwner
         whenContractNotPaused
         whenSlippageLimitRespected
-        whenDebtRepayment
         whenStrartegyHasDebtExcess
         whenStrategyMadeGain
     {
-        vm.prank(users.manager); strategy.sendReport(1000 ether);
+        vm.prank(users.manager); strategy.sendReport(type(uint256).max);
 
         // Assert it has withdrawn the gain
         uint256 actualStrategyAssets = strategy.totalAssets();
@@ -214,32 +172,73 @@ contract SendReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
 
         // Assert it has sent the gain to the multistrategy
-        uint256 actualMultistrategyAssets = multistrategy.totalAssets();
-        uint256 expectedMultistrategyAssets = 1090 ether;
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = depositAmount + profit;
         assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy assets");
     }
 
-    function test_SendReport_DebtRepayExcessDebtWithLoss()
+    function test_SendReport_RepayAll_WithDebtExcessDebt_WithLoss()
         external
         whenCallerOwner
         whenContractNotPaused
         whenSlippageLimitRespected
-        whenDebtRepayment
         whenStrartegyHasDebtExcess
         whenStrategyMadeLoss
     {
-        // Note that we're only withdrawing 900 ether. Withdrawing more than totalAssets would revert
-        // with InsufficientBalance
-        vm.prank(users.manager); strategy.sendReport(900 ether);
+        vm.prank(users.manager); strategy.sendReport(type(uint256).max);
 
         // Assert it has withdrawn the gain
         uint256 actualStrategyAssets = strategy.totalAssets();
         uint256 expectedStrategyAssets = 0 ether;
         assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
 
-        // Assert it has sent the gain to the multistrategy
-        uint256 actualMultistrategyAssets = multistrategy.totalAssets();
-        uint256 expectedMultistrategyAssets = 900 ether;
+        // Assert no assets have been sent to the multistrategy
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = depositAmount - loss;
+        assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy assets");
+    }
+
+    function test_SendReport_RepayExact_WithDebtExcess_WithGain() 
+        external
+        whenCallerOwner
+        whenContractNotPaused
+        whenSlippageLimitRespected
+        whenStrartegyHasDebtExcess
+        whenStrategyMadeGain
+    {
+        uint256 repayAmount = 500 ether;
+        vm.prank(users.manager); strategy.sendReport(repayAmount);
+
+        // Assert it has withdrawn the gain
+        uint256 actualStrategyAssets = strategy.totalAssets();
+        uint256 expectedStrategyAssets = depositAmount - repayAmount;
+        assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
+
+        // Assert no assets have been sent to the multistrategy
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = repayAmount + profit;
+        assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy assets");
+    }
+
+    function test_SendReport_RepayExact_WithDebtExcess_WithLoss() 
+        external
+        whenCallerOwner
+        whenContractNotPaused
+        whenSlippageLimitRespected
+        whenStrartegyHasDebtExcess
+        whenStrategyMadeLoss
+    {
+        uint256 repayAmount = 500 ether;
+        vm.prank(users.manager); strategy.sendReport(repayAmount);
+
+        // Assert it has withdrawn the gain
+        uint256 actualStrategyAssets = strategy.totalAssets();
+        uint256 expectedStrategyAssets = depositAmount - repayAmount - loss;
+        assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
+
+        // Assert no assets have been sent to the multistrategy
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = repayAmount;
         assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy assets");
     }
 }

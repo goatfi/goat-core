@@ -48,10 +48,6 @@ contract MockStrategyAdapter is StrategyAdapter {
         return (gain, loss);
     }
 
-    function calculateAmountToBeWithdrawn(uint256 _repayAmount, uint256 _strategyGain) external view returns(uint256) {
-        return _calculateAmountToBeWithdrawn(_repayAmount, _strategyGain);
-    }
-
     function withdrawFromStaking(uint256 _amount) external {
         _withdraw(_amount);
     }
@@ -92,7 +88,8 @@ contract MockStrategyAdapter is StrategyAdapter {
     function _totalAssets() internal override view returns(uint256) {
         super._totalAssets();
 
-        uint256 strategyBalance = IERC20(asset).balanceOf(address(vault));
+        uint256 vaultShares = vault.balanceOf(address(this));
+        uint256 strategyBalance = vault.previewRedeem(vaultShares);
         return strategyBalance + _balance();
     }
 

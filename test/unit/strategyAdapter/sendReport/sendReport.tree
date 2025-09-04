@@ -1,39 +1,30 @@
 sendReport.t.sol
-├── when the caller is not the owner
-│   └── it should revert
-└── when the caller is the owner
-    ├── when the contract is paused
-    │   └── it should revert with EnforcedPause error
-    └── when the contract is not paused
-        ├── when the repay amount is higher than strategy's totalAssets
-        │   └── it should revert with ERC20InsufficientBalance
-        └── when the repay amount is lower or equal than strategy's totalAssets
-            ├── when the slippage of the withdraw is greater than the slippage limit
-            │   └── it should revert with SlippageCheckFailed error
-            └── when the slippage of the withdraw is lower than the slippage limit
-                ├── when the debt repay Amount is zero
-                │   ├── when the strategy realised a gain
-                │   │   ├── it should withdraw the gain
-                │   │   ├── it should inform the multistrategy about the gain
-                │   │   └── it should reduce this strategy totalAssets by the gain amount
-                │   └── when the strategy realised a loss
-                │       └── it should inform the multistrategy about the loss
-                └── when the debt repay Amount is not zero
-                    ├── when this strategy has excess debt
-                    │   ├── when the strategy realised a gain
-                    │   │   ├── it should withdraw the debt repay amount plus the gain
-                    │   │   ├── it should inform the multistrategy about the gain
-                    │   │   └── it should reduce this strategy totalAssets by the debt repay amount plus gain amount
-                    │   └── when the strategy realised a loss
-                    │       ├── it should withdraw the debt repay amount
-                    │       ├── it should inform the multistrategy about the loss
-                    │       └── it should reduce this strategy totalAssets by the debt repay amount
-                    └── when this strategy has no excess debt
-                        ├── when the strategy realised a gain
-                        │   ├── it should withdraw the debt repay amount plus the gain
-                        │   ├── it should inform the multistrategy about the gain
-                        │   └── it should reduce this strategy totalAssets by the debt repay amount plus gain amount
-                        └── when the strategy realised a loss
-                            ├── it should withdraw the debt repay amount
-                            ├── it should inform the multistrategy about the loss
-                            └── it should reduce this strategy totalAssets by the debt repay amount
+├── when the contract is paused
+│   └── it should revert with EnforcedPause error
+└── when the contract is not paused
+    ├── when the caller is not the owner
+    │   └── it should revert with OwnableUnauthorizedAccount error
+    └── when the caller is the owner
+        ├── when the slippage limit is not respected
+        │   └── it should revert with SlippageCheckFailed error
+        └── when the slippage limit is respected
+            ├── when _repayAmount is 0
+            │   ├── when the strategy has no gain or loss
+            │   │   └── it should call strategyReport with current balance, 0, 0
+            │   ├── when the strategy has gain
+            │   │   └── it should call strategyReport with current balance minus gain, gain, 0
+            │   └── when the strategy has loss
+            │       └── it should call strategyReport with current balance, 0, loss
+            └── when _repayAmount > 0
+                ├── when there is no excess debt
+                │   ├── when the strategy has no gain or loss
+                │   │   └── it should call strategyReport with current balance, 0, 0
+                │   ├── when the strategy has gain
+                │   │   └── it should call strategyReport with current balance minus gain, gain, 0
+                │   └── when the strategy has loss
+                │       └── it should call strategyReport with current balance, 0, loss
+                └── when there is excess debt
+                    ├── when the strategy has gain
+                    │   └── it should call strategyReport with current balance minus gain, gain, loss
+                    └── when the strategy has loss
+                        └── it should call strategyReport with 0, current balance, loss

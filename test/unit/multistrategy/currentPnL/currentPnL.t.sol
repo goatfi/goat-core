@@ -19,7 +19,7 @@ contract CurrentPnL_Integration_Concrete_Test is Multistrategy_Base_Test {
     // Modifier for strategies with totalDebt > 0
     modifier whenStrategiesHavePositiveDebt() {
         _userDeposit(users.bob, 1000 ether);
-        vm.prank(address(strategy)); multistrategy.requestCredit();
+        vm.prank(users.manager); strategy.requestCredit();
         _;
     }
 
@@ -103,7 +103,7 @@ contract CurrentPnL_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         // Create second strategy
         MockStrategyAdapter strategy2 = _createAndAddAdapter(2000, 100 ether, 1000 ether);
-        vm.prank(address(strategy2)); multistrategy.requestCredit();
+        vm.prank(users.manager); strategy2.requestCredit();
 
         // Earn on both
         strategy.earn(100 ether);
