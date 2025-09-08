@@ -157,4 +157,14 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
 
     /// @notice Retires the Multistrategy. End of Life.
     function retire() external;
+
+    /// @notice Pauses the smart contract.
+    /// @dev Functions that implement the `paused` modifier will revert when called.
+    /// Guardians, Manager and Owner can call this function
+    function pause() external;
+
+    /// @notice Unpauses the smart contract.
+    /// @dev Functions that implement the `paused` won't revert when called.
+    /// Guardians, Manager and Owner can call this function
+    function unpause() external;
 }

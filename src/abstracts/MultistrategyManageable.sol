@@ -253,6 +253,16 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         emit MultistrategyRetired();
     }
 
+    /// @inheritdoc IMultistrategyManageable
+    function pause() external onlyGuardian {
+        _pause();
+    }
+
+    /// @inheritdoc IMultistrategyManageable
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     /*//////////////////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
