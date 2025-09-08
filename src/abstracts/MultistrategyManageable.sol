@@ -41,9 +41,6 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     /// @inheritdoc IMultistrategyManageable
     uint8 public activeStrategies;
 
-    /// @inheritdoc IMultistrategyManageable
-    bool public retired;
-
     /*//////////////////////////////////////////////////////////////////////////
                                   PRIVATE STORAGE
     //////////////////////////////////////////////////////////////////////////*/
@@ -86,12 +83,6 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     /// @param _strategy Address of the strategy to check if it is active. 
     modifier onlyActiveStrategy(address _strategy) {
         require(strategies[_strategy].activation > 0, Errors.StrategyNotActive(_strategy));
-        _;
-    }
-
-    /// @dev Reverts if the multistrategy has been retired / eol.
-    modifier whenNotRetired() {
-        require(retired == false, Errors.Retired());
         _;
     }
 
@@ -244,23 +235,6 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         strategies[_strategy].maxDebtDelta = _maxDebtDelta;
 
         emit StrategyMaxDebtDeltaSet(_strategy, _maxDebtDelta);
-    }
-
-
-    /// @inheritdoc IMultistrategyManageable
-    function retire() external onlyGuardian {
-        retired = true;
-        emit MultistrategyRetired();
-    }
-
-    /// @inheritdoc IMultistrategyManageable
-    function pause() external onlyGuardian {
-        _pause();
-    }
-
-    /// @inheritdoc IMultistrategyManageable
-    function unpause() external onlyOwner {
-        _unpause();
     }
 
     /*//////////////////////////////////////////////////////////////////////////

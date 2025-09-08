@@ -52,9 +52,6 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @param _strategy The address of the removed strategy.
     event StrategyRemoved(address indexed _strategy);
 
-    /// @notice Emitted when the deposits into this multistrategy are paused.
-    event MultistrategyRetired();
-
     /// @notice Address that will receive performance fee.
     function protocolFeeRecipient() external view returns (address);
 
@@ -78,9 +75,6 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
 
     /// @notice Amount of active strategies.
     function activeStrategies() external view returns (uint8);
-
-    /// @notice Returns true if multistrategy has been retired. 
-    function retired() external view returns (bool);
 
     /// @notice Returns the withdraw order.
     function getWithdrawOrder() external view returns (address[] memory);
@@ -154,17 +148,4 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @param _strategy Address of the strategy.
     /// @param _maxDebtDelta Upper limit of the change of debt.
     function setStrategyMaxDebtDelta(address _strategy, uint256 _maxDebtDelta) external;
-
-    /// @notice Retires the Multistrategy. End of Life.
-    function retire() external;
-
-    /// @notice Pauses the smart contract.
-    /// @dev Functions that implement the `paused` modifier will revert when called.
-    /// Guardians, Manager and Owner can call this function
-    function pause() external;
-
-    /// @notice Unpauses the smart contract.
-    /// @dev Functions that implement the `paused` won't revert when called.
-    /// Guardians, Manager and Owner can call this function
-    function unpause() external;
 }

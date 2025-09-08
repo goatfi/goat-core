@@ -44,4 +44,22 @@ contract Pause_Integration_Concrete_Test is Multistrategy_Base_Test {
         bool expectedToBePaused = true;
         assertEq(isPaused, expectedToBePaused, "pause");
     }
+
+    modifier whenCallerIsOwner() {
+        _;
+    }
+
+    function test_Pause() external whenCallerIsOwner whenContractIsUnpaused {
+        // Expect the relevant event to be emitted.
+        vm.expectEmit({ emitter: address(multistrategy) });
+        emit Paused({ account: users.owner });
+
+        // Pause the contract.
+        vm.prank(users.owner); multistrategy.pause();
+
+        // Assert that the contract has been paused.
+        bool isPaused = multistrategy.paused();
+        bool expectedToBePaused = true;
+        assertEq(isPaused, expectedToBePaused, "pause");
+    }
 }

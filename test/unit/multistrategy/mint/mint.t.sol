@@ -21,16 +21,6 @@ contract Mint_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    function test_RevertWhen_Retired() 
-        external 
-        whenContractNotPaused
-    {
-        vm.prank(users.guardian); multistrategy.retire();
-
-        vm.expectRevert(abi.encodeWithSelector(Errors.Retired.selector));
-        multistrategy.mint(shares, recipient);
-    }
-
     modifier whenNotRetired() {
         _;
     }

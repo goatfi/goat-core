@@ -58,4 +58,13 @@ interface IMultistrategyAdminable {
     /// - guardian address is already revoked.
     /// @param _guardian The address of the guardian.
     function revokeGuardian(address _guardian) external;
+
+    /// @notice Pauses the smart contract.
+    /// @dev Functions that implement the `paused` modifier will revert when called.
+    /// Guardians and Owner can call this function
+    function pause() external;
+
+    /// @notice Unpauses the smart contract.
+    /// @dev Functions that implement the `paused` won't revert when called.
+    function unpause() external;
 }

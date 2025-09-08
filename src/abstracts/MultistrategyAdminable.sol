@@ -64,4 +64,14 @@ abstract contract MultistrategyAdminable is IMultistrategyAdminable, Ownable, Pa
         guardians[_guardian] = false;
         emit GuardianRevoked(_guardian);
     }
+
+    /// @inheritdoc IMultistrategyAdminable
+    function pause() external onlyGuardian {
+        _pause();
+    }
+
+    /// @inheritdoc IMultistrategyAdminable
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 }

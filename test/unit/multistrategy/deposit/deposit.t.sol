@@ -25,17 +25,6 @@ contract Deposit_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    function test_RevertWhen_Retired() 
-        external 
-        whenContractNotPaused
-    {
-        vm.prank(users.guardian); multistrategy.retire();
-
-        // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.Retired.selector));
-        multistrategy.deposit(amount, recipient);
-    }
-
     modifier whenNotRetired() {
         _;
     }

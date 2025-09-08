@@ -65,7 +65,6 @@ contract Constructor_Integration_Concrete_Test is Test {
         assertEq(multistrategy.debtRatio(), 0, "debtRatio");
         assertEq(multistrategy.totalDebt(), 0, "totalDebt");
         assertEq(multistrategy.activeStrategies(), 0, "activeStrategies");
-        assertEq(multistrategy.retired(), false, "retired");
         assertEq(multistrategy.lockedProfit(), 0, "lockedProfit");
     }
 }

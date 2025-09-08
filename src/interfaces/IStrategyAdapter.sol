@@ -84,6 +84,5 @@ interface IStrategyAdapter {
 
     /// @notice Unpauses the smart contract.
     /// @dev Functions that implement the `paused` won't revert when called.
-    /// Only the Owner can call this function
     function unpause() external;
 }
