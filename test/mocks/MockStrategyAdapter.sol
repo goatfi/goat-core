@@ -5,27 +5,31 @@ import { IERC20, SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { IMockERC20 } from "./MockERC20.sol";
 import { MockERC4626 } from "./MockERC4626.sol";
-import { StrategyAdapter } from "src/abstracts/StrategyAdapter.sol";
+import { StrategyAdapterHarness } from "../utils/StrategyAdapterHarness.sol";
 
-contract MockStrategyAdapter is StrategyAdapter {
+contract MockStrategyAdapter is StrategyAdapterHarness {
     using SafeERC20 for IERC20;
 
     MockERC4626 public vault;
     uint256 slippage;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                MOCK HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
+
     constructor(
         address _multistrategy,
         address _asset
     ) 
-        StrategyAdapter(_multistrategy, _asset, "Mock", "MOCK") 
+        StrategyAdapterHarness(_multistrategy, _asset, "Mock", "MOCK") 
     {
         vault = new MockERC4626(_asset, "Staked DAI", "sDAI", false, 0);
         _giveAllowances();
     }
 
-    function balance() external view returns (uint256) {
-        return _balance();
-    }
+    /*//////////////////////////////////////////////////////////////////////////
+                                MOCK HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
 
     function earn(uint256 _amount) external {
         IMockERC20(asset).mint(address(vault), _amount);
@@ -39,66 +43,47 @@ contract MockStrategyAdapter is StrategyAdapter {
         slippage = _slippage;
     }
 
-    function tryWithdraw(uint256 _amount) external {
-        _tryWithdraw(_amount);
-    }
-
-    function calculateGainAndLoss(uint256 _currentAssets) external view returns(uint256 gain, uint256 loss) {
-        (gain, loss) = _calculateGainAndLoss(_currentAssets);
-        return (gain, loss);
-    }
-
     function withdrawFromStaking(uint256 _amount) external {
         _withdraw(_amount);
     }
 
-    function _deposit() internal override {
-        super._deposit();
+    /*//////////////////////////////////////////////////////////////////////////
+                                MOCK IMPLEMENTATIONS
+    //////////////////////////////////////////////////////////////////////////*/
 
+    function _deposit() internal override {
         vault.deposit(_balance(), address(this));
     }
 
     function _withdraw(uint256 _amount) internal override {
-        super._withdraw(_amount);
-
         vault.withdraw(_amount, address(this), address(this));
         uint256 lostAmount = Math.mulDiv(_amount, slippage, MAX_SLIPPAGE);
         IERC20(asset).safeTransfer(address(42069), lostAmount);
     }
 
     function _emergencyWithdraw() internal override {
-        super._emergencyWithdraw();
-
         uint256 vaultBalance = vault.balanceOf(address(this));
         vault.redeem(vaultBalance, address(this), address(this));
     }
 
     function _revokeAllowances() internal override {
-        super._revokeAllowances();
-
         IERC20(asset).forceApprove(address(vault), 0);
     }
 
     function _giveAllowances() internal override {
-        super._giveAllowances();
-
         IERC20(asset).forceApprove(address(vault), type(uint256).max);
     }
 
     function _totalAssets() internal override view returns(uint256) {
-        super._totalAssets();
-
         uint256 vaultShares = vault.balanceOf(address(this));
         uint256 strategyBalance = vault.previewRedeem(vaultShares);
         return strategyBalance + _balance();
     }
 
     function _availableLiquidity() internal override view returns(uint256) {
-        super._availableLiquidity();
-
         return vault.totalAssets();
     }
 
     /// @dev Needed for the Test Coverage to ignore it.
-    function testA() public {}
+    function testA() public override {}
 }
