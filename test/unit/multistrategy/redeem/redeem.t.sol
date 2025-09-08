@@ -5,6 +5,7 @@ import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.so
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
+import { ERC4626 } from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
 contract Redeem_Integration_Concrete_Test is Multistrategy_Base_Test {
@@ -31,7 +32,7 @@ contract Redeem_Integration_Concrete_Test is Multistrategy_Base_Test {
         amountToRedeem = 1000 ether;
 
         // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.ERC4626ExceededMaxRedeem.selector, users.bob, amountToRedeem, 0));
+        vm.expectRevert(abi.encodeWithSelector(ERC4626.ERC4626ExceededMaxRedeem.selector, users.bob, amountToRedeem, 0));
         multistrategy.redeem(amountToRedeem, users.bob, users.bob);
     }
 

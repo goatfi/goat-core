@@ -13,7 +13,7 @@ contract RemoveStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
 
     function test_RevertWhen_CallerNotManager() external {
         // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.CallerNotManager.selector, users.bob));
+        vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
         vm.prank(users.bob); multistrategy.removeStrategy(makeAddr("strategy"));
     }
 
@@ -62,7 +62,7 @@ contract RemoveStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenDebtRatioIsZero
     {
         // Expect a revert when trying to remove the strategy from the withdraw order
-        vm.expectRevert(abi.encodeWithSelector(Errors.StrategyWithOutstandingDebt.selector));
+        vm.expectRevert(abi.encodeWithSelector(Errors.StrategyWithActiveDebt.selector));
         vm.prank(users.manager); multistrategy.removeStrategy(address(strategyOne));
     }
 

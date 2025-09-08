@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { Errors } from "src/libraries/Errors.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
+import { ERC4626 } from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import { IERC4626 } from "@openzeppelin/interfaces/IERC4626.sol";
 
 contract Deposit_Integration_Concrete_Test is Multistrategy_Base_Test {
@@ -38,7 +39,7 @@ contract Deposit_Integration_Concrete_Test is Multistrategy_Base_Test {
         amount = 200_000 ether;
 
         // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.ERC4626ExceededMaxDeposit.selector, recipient, amount, 100_000 ether));
+        vm.expectRevert(abi.encodeWithSelector(ERC4626.ERC4626ExceededMaxDeposit.selector, recipient, amount, 100_000 ether));
         multistrategy.deposit(amount, recipient);
     }
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
+import { ERC4626 } from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
 contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
@@ -31,7 +32,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         amountToWithdraw = 1000 ether;
 
         // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.ERC4626ExceededMaxWithdraw.selector, users.bob, amountToWithdraw, 0));
+        vm.expectRevert(abi.encodeWithSelector(ERC4626.ERC4626ExceededMaxWithdraw.selector, users.bob, amountToWithdraw, 0));
         multistrategy.withdraw(amountToWithdraw, users.bob, users.bob);
     }
 

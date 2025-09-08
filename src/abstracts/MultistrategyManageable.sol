@@ -187,7 +187,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     /// @inheritdoc IMultistrategyManageable
     function removeStrategy(address _strategy) external onlyManager onlyActiveStrategy(_strategy) {
         require(strategies[_strategy].debtRatio == 0, Errors.StrategyNotRetired());
-        require(strategies[_strategy].totalDebt == 0, Errors.StrategyWithOutstandingDebt());
+        require(strategies[_strategy].totalDebt == 0, Errors.StrategyWithActiveDebt());
 
         for(uint8 i = 0; i < MAXIMUM_STRATEGIES; ++i) {
             if(withdrawOrder[i] == _strategy) {

@@ -11,7 +11,7 @@ contract Pause_Integration_Concrete_Test is StrategyAdapter_Base_Test {
 
     function test_RevertWhen_CallerNotGuardian() external {
         // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.CallerNotGuardian.selector, users.bob));
+        vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
         vm.prank(users.bob); strategy.pause();
     }
 

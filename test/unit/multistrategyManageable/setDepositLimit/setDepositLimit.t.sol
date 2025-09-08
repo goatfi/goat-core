@@ -9,7 +9,7 @@ contract SetDepositLimit_Integration_Concrete_Test is Multistrategy_Base_Test {
 
     function test_RevertWhen_CallerNotManager() external {
         // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.CallerNotManager.selector, users.bob));
+        vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
         vm.prank(users.bob); multistrategy.setDepositLimit(100_000 ether);
     }
 

@@ -8,7 +8,7 @@ import { Errors } from "src/libraries/Errors.sol";
 
 contract Panic_Integration_Concrete_Test is StrategyAdapter_Base_Test {
     function test_RevertWhen_CallerNotGuardian() external {
-        vm.expectRevert(abi.encodeWithSelector(Errors.CallerNotGuardian.selector, users.bob));
+        vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
         vm.prank(users.bob); strategy.panic();
     }
 

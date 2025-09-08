@@ -31,13 +31,13 @@ abstract contract MultistrategyAdminable is IMultistrategyAdminable, Ownable, Pa
 
     /// @notice Reverts if called by any account other than the owner or the manager.
     modifier onlyManager() {
-        require(msg.sender == owner() || msg.sender == manager, Errors.CallerNotManager(msg.sender));
+        require(msg.sender == owner() || msg.sender == manager, Errors.Unauthorized(msg.sender));
         _;
     }
 
-    /// @notice Reverts if called by any account other than the owner, the manager, or a guardian.
+    /// @notice Reverts if called by any account other than the owner or a guardian.
     modifier onlyGuardian() {
-        require(msg.sender == owner() || guardians[msg.sender], Errors.CallerNotGuardian(msg.sender));
+        require(msg.sender == owner() || guardians[msg.sender], Errors.Unauthorized(msg.sender));
         _;
     }
 
