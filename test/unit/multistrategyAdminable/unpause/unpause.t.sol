@@ -6,15 +6,8 @@ import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.so
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 
-interface IPausable {
-    event Unpaused(address account);
-
-    function paused() external view returns (bool);
-}
-
 contract Unpause_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_CallerNotOwner() external {
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, users.bob));
         vm.prank(users.bob); multistrategy.unpause();
     }
@@ -44,13 +37,13 @@ contract Unpause_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         // Expect the relevant event to be emitted.
         vm.expectEmit({ emitter: address(multistrategy) });
-        emit IPausable.Unpaused({ account: users.owner });
+        emit Pausable.Unpaused({ account: users.owner });
 
         // Pause the contract.
         vm.prank(users.owner); multistrategy.unpause();
 
         // Assert that the contract has been paused.
-        bool isPaused = IPausable(address(multistrategy)).paused();
+        bool isPaused = multistrategy.paused();
         bool expectedToBePaused = false;
         assertEq(isPaused, expectedToBePaused, "unpause");
     }

@@ -15,22 +15,21 @@ contract RevokeGuardian_Test is StrategyAdapter_Base_Test {
     }
     
     modifier whenCallerIsOwner() {
-        vm.startPrank(users.manager);
         _;
-        vm.stopPrank();
     }
 
     function test_RevokeGuardian_Success() external whenCallerIsOwner {
-        address guardian = users.guardian;
-
         // Enable the guardian first
-        strategy.enableGuardian(guardian);
+        vm.prank(users.manager); strategy.enableGuardian(users.alice);
+        assertEq(strategy.guardians(users.alice), true, "alice not enabled as guardian");
 
         vm.expectEmit(true, true, true, true, address(strategy));
-        emit IStrategyAdapterAdminable.GuardianRevoked(guardian);
+        emit IStrategyAdapterAdminable.GuardianRevoked(users.alice);
 
-        strategy.revokeGuardian(guardian);
+        vm.prank(users.manager); strategy.revokeGuardian(users.alice);
 
-        assertFalse(strategy.guardians(guardian));
+        bool isEnabled = strategy.guardians(users.alice);
+        bool expectedToBeEnabled = false;
+        assertEq(isEnabled, expectedToBeEnabled, "revoke guardian");
     }
 }

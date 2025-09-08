@@ -15,18 +15,18 @@ contract EnableGuardian_Test is StrategyAdapter_Base_Test {
     }
 
     modifier whenCallerIsOwner() {
-        vm.prank(users.manager);
         _;
     }
 
-    function test_EnableGuardian_Success() external whenCallerIsOwner {
-        address guardian = users.guardian;
+    function test_EnableGuardian() external whenCallerIsOwner {
 
         vm.expectEmit(true, true, true, true, address(strategy));
-        emit IStrategyAdapterAdminable.GuardianEnabled(guardian);
+        emit IStrategyAdapterAdminable.GuardianEnabled({ _guardian: users.bob });
 
-        strategy.enableGuardian(guardian);
+        vm.prank(users.manager); strategy.enableGuardian(users.bob);
 
-        assertTrue(strategy.guardians(guardian));
+        bool isEnabled = strategy.guardians(users.bob);
+        bool expectedToBeEnabled = true;
+        assertEq(isEnabled, expectedToBeEnabled, "enable guardian");
     }
 }

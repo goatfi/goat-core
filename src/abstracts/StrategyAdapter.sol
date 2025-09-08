@@ -14,9 +14,6 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    /// @notice Version of this smart contract following Semver 2.0 standard.
-    string public constant VERSION = '1.0.0';
-
     /// @dev 100% in BPS, setting the slippage to 100% means no slippage protection.
     uint256 constant MAX_SLIPPAGE = 10_000;
 

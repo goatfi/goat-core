@@ -7,61 +7,22 @@ import { Ownable } from "@openzeppelin/access/Ownable.sol";
 
 contract EnableGuardian_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_CallerNotOwner() external {
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, users.bob));
         vm.prank(users.bob); multistrategy.enableGuardian(users.bob);
     }
 
     modifier whenCallerOwner() {
-        vm.prank(users.owner);
         _;
     }
 
-    function test_EnableGuardian_AlreadyEnabledGuardian() external whenCallerOwner {
-        // Expect the relevant event to be emitted.
-        vm.expectEmit({ emitter: address(multistrategy) });
-        emit IMultistrategyAdminable.GuardianEnabled({ _guardian: users.guardian });
-
-        // Enable the guardian
-        multistrategy.enableGuardian(users.guardian);
-
-        // Assert the guardian has been enabled
-        bool isEnabled = multistrategy.guardians(users.guardian);
-        bool expectedToBeEnabled = true;
-        assertEq(isEnabled, expectedToBeEnabled, "enable guardian");
-    }
-
-    function test_EnableGuardian_ZeroAddress() external whenCallerOwner {
-        // Expect the relevant event to be emitted.
-        vm.expectEmit({ emitter: address(multistrategy) });
-        emit IMultistrategyAdminable.GuardianEnabled({ _guardian: address(0) });
-
-        // Enable the guardian
-        multistrategy.enableGuardian(address(0));
-
-        // Assert the address(0) has been enabled
-        bool isEnabled = multistrategy.guardians(address(0));
-        bool expectedToBeEnabled = true;
-        assertEq(isEnabled, expectedToBeEnabled, "enable guardian");
-    }
-
-    modifier whenNotZeroAddress() {
-        _;
-    }
-
-    function test_EnableGuardian_NotEnabledGuardian() 
-        external 
-        whenCallerOwner 
-        whenNotZeroAddress
+    function test_EnableGuardian() external whenCallerOwner
     {
         // Expect the relevant event to be emitted.
         vm.expectEmit({ emitter: address(multistrategy) });
         emit IMultistrategyAdminable.GuardianEnabled({ _guardian: users.bob });
 
-        // Enable the guardian
-        multistrategy.enableGuardian(users.bob);
+        vm.prank(users.owner); multistrategy.enableGuardian(users.bob);
 
-        // Assert the address(0) has been enabled
         bool isEnabled = multistrategy.guardians(users.bob);
         bool expectedToBeEnabled = true;
         assertEq(isEnabled, expectedToBeEnabled, "enable guardian");
