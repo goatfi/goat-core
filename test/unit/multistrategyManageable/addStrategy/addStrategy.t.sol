@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
-import { MockERC20 } from "../../../mocks/MockERC20.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Multistrategy } from "src/Multistrategy.sol";
 import { MStrat } from "src/libraries/DataTypes.sol";
@@ -52,7 +51,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         address strategy = address(0);
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAddress.selector, strategy));
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidStrategy.selector, strategy));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
     }
 
@@ -68,7 +67,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         address strategy = address(multistrategy);
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAddress.selector, strategy));
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidStrategy.selector, strategy));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
     }
 
@@ -108,10 +107,8 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenNotMultistrategyAddress
         whenStrategyIsInactive
     {
-        MockERC20 mockToken = new MockERC20("USDT", "USDT");
-        // Deploy a multistrategy with a different asset
-        vm.prank(users.owner); Multistrategy usdtMultistrategy = new Multistrategy({
-            _asset: address(mockToken),
+        vm.prank(users.owner); Multistrategy newMultistrategy = new Multistrategy({
+            _asset: address(dai),
             _manager: users.manager,
             _protocolFeeRecipient: users.feeRecipient,
             _name: "Multistrategy",
@@ -119,10 +116,10 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         });
         
         // Deploy a mock strategy for the usdt multistrategy
-        vm.prank(users.manager); MockStrategyAdapter usdtAdapter = new MockStrategyAdapter(address(usdtMultistrategy), address(mockToken));
+        vm.prank(users.manager); MockStrategyAdapter strategyWithWrongMulti = new MockStrategyAdapter(address(newMultistrategy));
         
-        vm.expectRevert(abi.encodeWithSelector(Errors.AssetMismatch.selector,multistrategy.asset(),usdtMultistrategy.asset()));
-        vm.prank(users.owner); multistrategy.addStrategy(address(usdtAdapter), debtRatio, minDebtDelta, maxDebtDelta);
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidStrategy.selector, address(strategyWithWrongMulti)));
+        vm.prank(users.owner); multistrategy.addStrategy(address(strategyWithWrongMulti), debtRatio, minDebtDelta, maxDebtDelta);
     }
 
     modifier whenAssetMatch() {

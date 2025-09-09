@@ -18,12 +18,11 @@ contract MockStrategyAdapter is StrategyAdapterHarness {
     //////////////////////////////////////////////////////////////////////////*/
 
     constructor(
-        address _multistrategy,
-        address _asset
+        address _multistrategy
     ) 
-        StrategyAdapterHarness(_multistrategy, _asset, "Mock", "MOCK") 
+        StrategyAdapterHarness(_multistrategy, "Mock", "MOCK") 
     {
-        vault = new MockERC4626(_asset, "Staked DAI", "sDAI", false, 0);
+        vault = new MockERC4626(asset, "Staked DAI", "sDAI", false, 0);
         _giveAllowances();
     }
 

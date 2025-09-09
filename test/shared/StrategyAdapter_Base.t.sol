@@ -34,13 +34,13 @@ contract StrategyAdapter_Base_Test is Base_Test {
     }
 
     function _createAndAddAdapter() internal {
-        vm.prank(users.manager); strategy = new MockStrategyAdapter(address(multistrategy), address(dai));
+        vm.prank(users.manager); strategy = new MockStrategyAdapter(address(multistrategy));
         vm.prank(users.manager); strategy.enableGuardian(users.guardian);
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), 10_000, 0, type(uint256).max);
     }
 
     function _createAndAddAdapter(uint256 _debtRatio, uint256 _minDebtDelta, uint256 _maxDebtDelta) internal {
-        vm.prank(users.manager); strategy = new MockStrategyAdapter(address(multistrategy), address(dai));
+        vm.prank(users.manager); strategy = new MockStrategyAdapter(address(multistrategy));
         vm.prank(users.manager); strategy.enableGuardian(users.guardian);
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), _debtRatio, _minDebtDelta, _maxDebtDelta);
     }

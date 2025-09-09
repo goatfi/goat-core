@@ -108,6 +108,12 @@ library Errors {
      */
     error MaximumAmountStrategies();
 
+    /**
+     * @notice Thrown when `strategy` is not valid.
+     * @param strategy The address that failed validation.
+     */
+    error InvalidStrategy(address strategy);
+
     /*//////////////////////////////////////////////////////////////////////////
                                 STRATEGY ADAPTER
     //////////////////////////////////////////////////////////////////////////*/
@@ -117,14 +123,6 @@ library Errors {
      * @param caller The address that attempted to call the restricted function.
      */
     error CallerNotMultistrategy(address caller);
-
-    /**
-     * @notice Thrown when the `_asset` parameter in the constructor doesn't match 
-     * the deposit token defined by the Multistrategy contract.
-     * @param multAsset The asset address expected by the Multistrategy.
-     * @param stratAsset The asset address provided to the strategy.
-     */
-    error AssetMismatch(address multAsset, address stratAsset);
 
     /**
      * @notice Thrown when the requested slippage limit exceeds the maximum permitted value.

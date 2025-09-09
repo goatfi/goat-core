@@ -1,7 +1,4 @@
 constructor.t.sol
-├── when asset does not match
-│   └── it should revert with AssetMismatch error
-└── when asset matches
     ├── it should set owner
     ├── it should set guardians
     ├── it should set paused

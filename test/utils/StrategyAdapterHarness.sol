@@ -7,10 +7,9 @@ abstract contract StrategyAdapterHarness is StrategyAdapter {
 
     constructor(
         address _multistrategy,
-        address _asset,
         string memory _name,
         string memory _id
-    ) StrategyAdapter(_multistrategy, _asset, _name, _id) {}
+    ) StrategyAdapter(_multistrategy, _name, _id) {}
 
     function balance() external view returns (uint256) {
         return _balance();

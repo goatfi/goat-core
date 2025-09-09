@@ -38,13 +38,9 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     
     /// @dev Reverts if `_asset` doesn't match `asset` on the Multistrategy.
     /// @param _multistrategy Address of the multistrategy this strategy will belongs to.
-    /// @param _asset Address of the token used to deposit and withdraw on this strategy.
-    constructor(address _multistrategy, address _asset, string memory _name, string memory _id) StrategyAdapterAdminable(msg.sender) {
-        require(_asset == IERC4626(_multistrategy).asset(), Errors.AssetMismatch(IERC4626(_multistrategy).asset(), _asset));
-
+    constructor(address _multistrategy, string memory _name, string memory _id) StrategyAdapterAdminable(msg.sender) {
         multistrategy = _multistrategy;
-        asset = _asset;
-        slippageLimit = 0;
+        asset = IERC4626(_multistrategy).asset();
         name = _name;
         id = _id;
 

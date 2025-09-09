@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.30;
 
-import { IERC4626 } from "@openzeppelin/interfaces/IERC4626.sol";
 import { MultistrategyAdminable } from "./MultistrategyAdminable.sol";
 import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
 import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
@@ -149,10 +148,9 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         uint256 _maxDebtDelta
     ) external onlyOwner {
         require(activeStrategies < MAXIMUM_STRATEGIES, Errors.MaximumAmountStrategies());
-        require(_strategy != address(0) && _strategy != address(this), Errors.InvalidAddress(_strategy));
+        require(_strategy != address(0) && _strategy != address(this), Errors.InvalidStrategy(_strategy));
+        require(IStrategyAdapter(_strategy).multistrategy() == address(this), Errors.InvalidStrategy(_strategy));
         require(strategies[_strategy].activation == 0, Errors.StrategyAlreadyActive(_strategy));
-        require(IERC4626(address(this)).asset() == IStrategyAdapter(_strategy).asset(), 
-            Errors.AssetMismatch(IERC4626(address(this)).asset(), IStrategyAdapter(_strategy).asset()));
         require(debtRatio + _debtRatio <=  MAX_BPS, Errors.DebtRatioAboveMaximum(debtRatio + _debtRatio));
         require(_minDebtDelta <= _maxDebtDelta, Errors.InvalidDebtDelta());
 
