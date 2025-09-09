@@ -114,7 +114,7 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
     }
 
     modifier whenStrategyRetired() {
-        vm.prank(users.manager); IMultistrategyManageable(address(multistrategy)).retireStrategy(address(strategy));
+        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 0);
         _;
     }
 

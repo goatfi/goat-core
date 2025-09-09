@@ -1,27 +1,27 @@
 addStrategy.t.sol
-├── when the caller is not the manager
-│  └── it should revert
-└── when the caller is the manager
+├── when the caller is not the owner
+│  └── it should revert with OwnableUnauthorizedAccount error
+└── when the caller is the owner
    ├── when the multistrategy already has the maximum amount of strategies
-   │  └── it should revert
+   │  └── it should revert with MaximumAmountStrategies error
    └── when the multistrategy has less than the maximum amount of strategies
       ├── when the strategy added is the zero address
-      │   └── it should revert
+      │   └── it should revert with InvalidAddress error
       └── when the strategy added is not the zero address
           ├── when the strategy is the address of the multistrategy
-          │   └── it should revert
+          │   └── it should revert with InvalidAddress error.
           └── when the strategy is not the address of the multistrategy
               ├── when the added strategy is active
-              │   └── it should revert
+              │   └── it should revert with StrategyAlreadyActive error.
               └── when the added strategy is not active
-                  ├── when the base asset of the strategy doesn't match the base asset of the multistrategy
-                  │   └── it should revert
-                  └── when the base asset of the strategy matches the base asset of the multistrategy
+                  ├── when the asset of the strategy doesn't match the asset of the multistrategy
+                  │   └── it should revert with AssetMismatch error
+                  └── when the asset of the strategy matches the asset of the multistrategy
                       ├── when the strategy debt ratio sets the multistrategy debt ratio above 100%
-                      │   └── it should revert
+                      │   └── it should revert with DebtRatioAboveMaximum error
                       └── when the strategy debt ratio doesn't set the multistrategy debt ratio above 100%
                           ├── when min debt delta is higher than max debt delta
-                          │   └── it should revert
+                          │   └── it should revert with InvalidDebtDelta error.
                           └── when min debt delta is lower or equal than max debt delta
                               ├── it should add the strategy parameters to the strategies array
                               ├── it should add the strategy debt ratio to the multistrategy debt ratio

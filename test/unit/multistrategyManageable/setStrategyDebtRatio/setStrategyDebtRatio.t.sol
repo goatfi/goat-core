@@ -7,12 +7,10 @@ import { Errors } from "src/libraries/Errors.sol";
 import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
 
 contract SetStrategyDebtRatio_Integration_Concrete_Test is Multistrategy_Base_Test {
-
     MockStrategyAdapter strategy;
     uint256 debtRatio;
 
     function test_RevertWhen_CallerNotManager() external {
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
         vm.prank(users.bob); multistrategy.setStrategyDebtRatio(makeAddr("strategy"), debtRatio);
     }
@@ -22,7 +20,6 @@ contract SetStrategyDebtRatio_Integration_Concrete_Test is Multistrategy_Base_Te
     }
 
     function test_RevertWhen_StrategyIsNotActive() external whenCallerIsManager {
-        // Expect Revert
         vm.expectRevert(abi.encodeWithSelector(Errors.StrategyNotActive.selector, makeAddr("strategy")));
         vm.prank(users.manager); multistrategy.setStrategyDebtRatio(makeAddr("strategy"), debtRatio);
     }
@@ -46,7 +43,6 @@ contract SetStrategyDebtRatio_Integration_Concrete_Test is Multistrategy_Base_Te
     }
 
     modifier whenDebtRatioBelowMaximum() {
-        // The multistrategy only has 1 active strategy, so this will be below minimum
         debtRatio = 6_000;
         _;
     }

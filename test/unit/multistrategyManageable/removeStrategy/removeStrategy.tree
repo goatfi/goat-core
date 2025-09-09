@@ -1,17 +1,16 @@
 removeStrategy.t.sol
 ├── when the caller is not the manager
-│   └── it should revert
+│   └── it should revert with Unauthorized error
 └── when the caller is the manager
     ├── when the strategy is not active
     │   └── it should revert with StrategyNotActive error
     └── when the strategy is active
         ├── when the strategy debtRatio is not zero
-        │   └── it should revert with StrategyNotRetired error
+        │   └── it should revert with StrategyWithActiveDebtRatio error
         └── when the strategy debtRatio is zero
-            ├── when the strategy has outstanding debt
+            ├── when the strategy has active debt
             │   └── it should revert with StrategyWithActiveDebt error
-            └── when the strategy doesn't have any outstanding debt
-                └── when the strategy is in the withdraw order
+            └── when the strategy doesn't have any active debt
                     ├── it should set the strategy address in the withdraw order to address(0)
                     ├── it should organize the withdraw order array
                     └── it should emit the StrategyRemoved event

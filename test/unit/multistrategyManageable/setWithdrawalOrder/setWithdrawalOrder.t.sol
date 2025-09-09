@@ -17,7 +17,6 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     function test_RevertWhen_CallerNotManager() external {
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
         vm.prank(users.bob); multistrategy.setWithdrawOrder(strategies);
     }
@@ -27,10 +26,8 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     function test_RevertWhen_LengthDoNotMatch() external whenCallerIsManager {
-        // Multistrategy withdrawOrder is length 10, so we create a length 11 to mismatch.
         strategies = new address[](11);
 
-        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
         vm.prank(users.manager);multistrategy.setWithdrawOrder(strategies);
     }
@@ -39,17 +36,38 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    function test_RevertWhen_DuplicateStrategies()
+    function test_RevertWhen_NumberOfActiveStrategiesDoesntMatch()
         external
         whenCallerIsManager
         whenLengthMatches
-    {   
+    {
+        addMockStrategy();
+        // Create an array with all zero strategies.
+        strategies = new address[](10);
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
+        vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
+    }
+
+    modifier whenNumberOfActiveStrategiesMatch {
+        _;
+    }
+
+    /// @dev If a non-zeroAddress is placed after a zero address in the withdraw order
+    /// it should revert, as that strategy wont be able to have withdraws, as the 
+    /// withdraw function exits when it reaches a zero address
+    function test_RevertWhen_ZeroAddressOrderNotRespected()
+        external
+        whenCallerIsManager
+        whenLengthMatches
+        whenNumberOfActiveStrategiesMatch
+    {
         // Add a strategy to the multistrategy so it is present in the withdrawal order.
         address mockStrategy = addMockStrategy();
-        
-        // Create an array with duplicate strategies
+
+        // Create an array with an invalid order
         strategies = [
-            mockStrategy, // 1
+            address(0),   // 1
             mockStrategy, // 2
             address(0),   // 3
             address(0),   // 4
@@ -61,20 +79,41 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
             address(0)    // 10
         ];
 
-        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
         vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
     }
 
-    modifier whenNoDuplicates() {
+    modifier whenZeroAddressOrderIsRespected() {
         _;
+    }
+
+    function test_SetWithdrawOrder_EmptyWithdrawOrder()
+        external
+        whenCallerIsManager
+        whenLengthMatches
+        whenNumberOfActiveStrategiesMatch
+        whenZeroAddressOrderIsRespected
+    {
+        address[] memory withdrawOrder = multistrategy.getWithdrawOrder();
+        
+        strategies = new address[](10);
+
+        vm.expectEmit({ emitter: address(multistrategy) });
+        emit IMultistrategyManageable.WithdrawOrderSet();
+
+        vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
+
+        withdrawOrder = multistrategy.getWithdrawOrder();
+        
+        assertEq(withdrawOrder, strategies);
     }
 
     function test_RevertWhen_InactiveStrategy()
         external
         whenCallerIsManager
         whenLengthMatches
-        whenNoDuplicates
+        whenNumberOfActiveStrategiesMatch
+        whenZeroAddressOrderIsRespected
     {
         // Create the strategy but we don't add it to the multistrategy, so it wont be active
         address mockStrategy = address(_createAdapter());
@@ -102,22 +141,20 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    /// @dev If a non-zeroAddress is placed after a zero address in the withdraw order
-    /// it should revert, as that strategy wont be able to have withdraws, as the 
-    /// withdraw function exits when it reaches a zero address
-    function test_RevertWhen_ZeroAddressOrderNotRespected()
+    function test_RevertWhen_DuplicateStrategies()
         external
         whenCallerIsManager
         whenLengthMatches
-        whenNoDuplicates
+        whenNumberOfActiveStrategiesMatch
+        whenZeroAddressOrderIsRespected
         whenAllStrategiesAreActive
-    {
+    {   
         // Add a strategy to the multistrategy so it is present in the withdrawal order.
         address mockStrategy = addMockStrategy();
-
-        // Create an array with an invalid order
+        
+        // Create an array with duplicate strategies
         strategies = [
-            address(0),   // 1
+            mockStrategy, // 1
             mockStrategy, // 2
             address(0),   // 3
             address(0),   // 4
@@ -134,60 +171,22 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
         vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
     }
 
-    modifier whenZeroAddressOrderIsRespected() {
+    modifier whenNoDuplicates() {
         _;
-    }
-
-    function test_SetWithdrawOrder_EmptyWithdrawOrder()
-        external
-        whenCallerIsManager
-        whenLengthMatches
-        whenNoDuplicates
-        whenAllStrategiesAreActive
-        whenZeroAddressOrderIsRespected
-    {
-        address[] memory withdrawOrder = multistrategy.getWithdrawOrder();
-        
-        // Create a new withdraw order
-        strategies = [
-            address(0),   // 1
-            address(0),   // 2
-            address(0),   // 3
-            address(0),   // 4
-            address(0),   // 5
-            address(0),   // 6
-            address(0),   // 7
-            address(0),   // 8
-            address(0),   // 9
-            address(0)    // 10
-        ];
-
-        vm.expectEmit({ emitter: address(multistrategy) });
-        emit IMultistrategyManageable.WithdrawOrderSet();
-
-        vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
-
-        withdrawOrder = multistrategy.getWithdrawOrder();
-        
-        // Assert that all strategies are address(0)
-        for(uint256 i = 0; i < withdrawOrder.length; ++i){
-            assertEq(withdrawOrder[i], address(0), "setWithdrawOrder");
-        }
     }
 
     function test_SetWithdrawOrder_NewWithdrawOrder()
         external
         whenCallerIsManager
         whenLengthMatches
-        whenNoDuplicates
-        whenAllStrategiesAreActive
+        whenNumberOfActiveStrategiesMatch
         whenZeroAddressOrderIsRespected
+        whenAllStrategiesAreActive
+        whenNoDuplicates
     {
         // Add two strategies to the multistrategy so they are present in the withdrawOrder
         address mockStrategyOne = addMockStrategy();
         address mockStrategyTwo = addMockStrategy();
-
-        address[] memory withdrawOrder = multistrategy.getWithdrawOrder();
         
         // Create a new withdraw order
         strategies = [
@@ -208,7 +207,7 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
 
-        withdrawOrder = multistrategy.getWithdrawOrder();
+        address[] memory withdrawOrder = multistrategy.getWithdrawOrder();
 
         // Assert the withdraw order has been set correctly
         address actualFirstPositionStrategy = withdrawOrder[0];

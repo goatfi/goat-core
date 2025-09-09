@@ -7,39 +7,40 @@ import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
 
 contract SetPerformanceFee_Integration_Concrete_Test is Multistrategy_Base_Test {
+    uint256 newFee;
 
     function test_RevertWhen_CallerNotOwner() external {
-        // Expect a revert with Ownable error
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, users.bob));
         vm.prank(users.bob); multistrategy.setPerformanceFee(1000);
     }
 
     modifier whenCallerIsOwner() {
+        vm.prank(users.owner); 
         _;
     }
 
     function test_RevertWhen_PerformanceFeeAboveMaximum() external whenCallerIsOwner {
-        uint256 excessiveFee = 2_001; // Above MAX_PERFORMANCE_FEE (2_000)
-        // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.ExcessiveFee.selector, excessiveFee));
-        vm.prank(users.owner); multistrategy.setPerformanceFee(excessiveFee);
+        newFee = 2_001; // Above MAX_PERFORMANCE_FEE (2_000)
+        vm.expectRevert(abi.encodeWithSelector(Errors.ExcessiveFee.selector, newFee));
+        multistrategy.setPerformanceFee(newFee);
     }
 
     modifier whenPerformanceFeeWithinAllowedRange() {
+        newFee = 1_500;
         _;
     }
 
-    function test_SetPerformanceFee() external whenCallerIsOwner whenPerformanceFeeWithinAllowedRange {
-        uint256 newFee = 1_500;
-
+    function test_SetPerformanceFee() 
+        external 
+        whenCallerIsOwner 
+        whenPerformanceFeeWithinAllowedRange 
+    {
         // Expect the relevant event
         vm.expectEmit({ emitter: address(multistrategy) });
         emit IMultistrategyManageable.PerformanceFeeSet(newFee);
 
-        // Set the performance fee
-        vm.prank(users.owner); multistrategy.setPerformanceFee(newFee);
+        multistrategy.setPerformanceFee(newFee);
 
-        // Assert the performance fee has been set
         uint256 actualPerformanceFee = multistrategy.performanceFee();
         uint256 expectedPerformanceFee = newFee;
         assertEq(actualPerformanceFee, expectedPerformanceFee, "setPerformanceFee");

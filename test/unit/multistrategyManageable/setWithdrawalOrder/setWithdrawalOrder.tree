@@ -1,23 +1,25 @@
 setWithdrawOrder.t.sol
-.
 ├── when the caller is not the manager
 │   └── it should revert
 └── when the caller is the manager
     ├── when the order length is incorrect
-    │   └── it should revert with StrategiesLengthMismatch error
+    │   └── it should revert with InvalidWithdrawOrder error
     └── when the order length is correct
-        ├── when there are duplicate strategies
-        │   └── it should revert with DuplicateStrategyInArray error
-        └── when all strategies are unique
-            ├── when a strategy is inactive
-            │   └── it should revert with StrategyNotActive error
-            └── when all strategies are active
-                ├── when a zero address is followed by a strategy address
+        ├── when the number of non-zero addresses does not match activeStrategies
+        │   └── it should revert with InvalidWithdrawOrder error
+        └── when the number of non-zero addresses matches activeStrategies
+            ├── when a strategy is the zero address
+            │   ├── when a following address is not a zero address
+            │   │   └── it should revert with InvalidWithdrawOrder error
+            │   └── when all the following addresses are zero address
+            │       ├── it should set the new withdraw order
+            │       └── it should emit the WithdrawOrderSet event
+            └── when a strategy is not the zero address
+                ├── when the strategy is inactive
                 │   └── it should revert with InvalidWithdrawOrder error
-                └── when a zero address is followed by only zero addresses
-                    ├── when all strategies in new withdraw order are zero address
-                    │   ├── it should set the new withdraw order
-                    │   └── it should emit the WithdrawOrderSet event
-                    └── when all strategies in new withdraw order are addresses
+                └── when the strategy is active
+                    ├── when there is another strategy with the same address
+                    │   └── it should revert with InvalidWithdrawOrder error
+                    └── when there is no other strategy with the same address
                         ├── it should set the new withdraw order
                         └── it should emit the WithdrawOrderSet event

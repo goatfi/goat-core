@@ -1,8 +1,9 @@
 setProtocolFeeRecipient.t.sol
 ├── when the caller is not the owner
-│   └── it should revert
+│  └── it should revert OwnableUnauthorizedAccount error
 └── when the caller is the owner
-    ├── when the protocol fee recipient is the zero address
-    │   └── it should revert with ZeroAddress error
-    └── when the protocol fee recipient is not the zero address
-        └── it should set the protocol fee recipient and emit the ProtocolFeeRecipientSet event
+   ├── when the new protocol fee recipient is the zero address
+   │  └── it should revert with ZeroAddress error
+   └── when the new protocol fee recipient is not the zero address
+      ├── it should set the protocol fee recipient
+      └── it should emit a {ProtocolFeeRecipientSet} event

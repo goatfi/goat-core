@@ -39,7 +39,7 @@ contract CreditAvailable_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenNotZeroAddress
         whenThereAreDeposits
     {
-        vm.prank(users.manager); multistrategy.retireStrategy(address(strategy));
+        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 0);
 
         uint256 actualCreditAvailable = multistrategy.creditAvailable(address(strategy));
         uint256 expectedCreditAvailable = 0;

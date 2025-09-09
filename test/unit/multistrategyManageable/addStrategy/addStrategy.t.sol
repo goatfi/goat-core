@@ -12,7 +12,6 @@ import { Errors } from "src/libraries/Errors.sol";
 import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
 
 contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
-
     uint256 debtRatio = 5_000;
     uint256 minDebtDelta = 100 ether;
     uint256 maxDebtDelta = 100_000 ether;
@@ -20,7 +19,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_CallerNotOwner() external {
         address strategy = makeAddr("strategy");
         
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, users.bob));
         vm.prank(users.bob); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
     }
@@ -29,26 +27,16 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    /// @dev Deploy and add 10 mock strategies to the multistrategy
-    modifier whenActiveStrategiesAtMaximum() {
-        // Deployed strategies will have 10% debt ratio
-        debtRatio = 1_000;
-        
-        // Deploy 10 strategies, each with 10% debt ratio
-        for (uint256 i = 0; i < 10; i++) {
-            MockStrategyAdapter strategy = _createAndAddAdapter(debtRatio, minDebtDelta, maxDebtDelta);
-        }
-        _;
-    }
-
     function test_RevertWhen_ActiveStrategiesAboveMaximum() 
         external 
         whenCallerIsOwner
-        whenActiveStrategiesAtMaximum
     {
+        // Deploy 10 strategies, each with 10% debt ratio
+        for (uint256 i = 0; i < 10; i++) {
+            _createAndAddAdapter(1_000, minDebtDelta, maxDebtDelta);
+        }
         MockStrategyAdapter strategy = _createAdapter();
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.MaximumAmountStrategies.selector));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
     }
@@ -64,7 +52,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         address strategy = address(0);
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAddress.selector, strategy));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
     }
@@ -81,7 +68,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         address strategy = address(multistrategy);
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAddress.selector, strategy));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
     }
@@ -102,7 +88,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         // We add the strategy
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.StrategyAlreadyActive.selector, strategy));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
     }
@@ -114,9 +99,8 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     /// @dev Testing this requires some setup. As creating a strategy with the wrong base asset
     ///      would revert, as it is checked in the constructor of the StrategyAdapter.
     ///      We need to deploy a need multistrategy with a different token and create a strategy for
-    ///      that multistrategy. Revert will happen when we try to add that strategy to the multistrategy
-    ///      We're testing here.
-    function test_RevertWhen_assetDoNotMatch() 
+    ///      that multistrategy.
+    function test_RevertWhen_AssetDoNotMatch() 
         external
         whenCallerIsOwner
         whenActiveStrategiesBelowMaximum
@@ -135,41 +119,13 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         });
         
         // Deploy a mock strategy for the usdt multistrategy
-        MockStrategyAdapter strategy = _createAdapter();
+        vm.prank(users.manager); MockStrategyAdapter usdtAdapter = new MockStrategyAdapter(address(usdtMultistrategy), address(mockToken));
         
-        // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(
-            Errors.AssetMismatch.selector, 
-            usdtMultistrategy.asset(), 
-            multistrategy.asset()
-        ));
-        vm.prank(users.owner); usdtMultistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
+        vm.expectRevert(abi.encodeWithSelector(Errors.AssetMismatch.selector,multistrategy.asset(),usdtMultistrategy.asset()));
+        vm.prank(users.owner); multistrategy.addStrategy(address(usdtAdapter), debtRatio, minDebtDelta, maxDebtDelta);
     }
 
     modifier whenAssetMatch() {
-        _;
-    }
-
-    function test_RevertWhen_MinDebtDeltaIsHigherThanMaxDebtDelta()
-        external
-        whenCallerIsOwner
-        whenActiveStrategiesBelowMaximum
-        whenNotZeroAddress
-        whenNotMultistrategyAddress
-        whenStrategyIsInactive
-        whenAssetMatch
-    {
-        MockStrategyAdapter strategy = _createAdapter();
-        minDebtDelta = 200_000 ether;
-        maxDebtDelta = 100_000 ether;
-
-        // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidDebtDelta.selector));
-        vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
-    }
-
-    /// @dev Le = Lower or Equal
-    modifier whenMinDebtDeltaLeMaxDebtDelta() {
         _;
     }
 
@@ -181,19 +137,39 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenNotMultistrategyAddress
         whenStrategyIsInactive
         whenAssetMatch
-        whenMinDebtDeltaLeMaxDebtDelta
     {
         MockStrategyAdapter strategy = _createAdapter();
-        // 110% debt ratio
         debtRatio = 11_000;
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.DebtRatioAboveMaximum.selector, debtRatio));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
     }
 
     /// @dev Le = Lower or Equal
     modifier whenDebtRatioLeMax() {
+        _;
+    }
+
+    function test_RevertWhen_MinDebtDeltaIsHigherThanMaxDebtDelta()
+        external
+        whenCallerIsOwner
+        whenActiveStrategiesBelowMaximum
+        whenNotZeroAddress
+        whenNotMultistrategyAddress
+        whenStrategyIsInactive
+        whenAssetMatch
+        whenDebtRatioLeMax
+    {
+        MockStrategyAdapter strategy = _createAdapter();
+        minDebtDelta = 200_000 ether;
+        maxDebtDelta = 100_000 ether;
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidDebtDelta.selector));
+        vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
+    }
+
+    /// @dev Le = Lower or Equal
+    modifier whenMinDebtDeltaLeMaxDebtDelta() {
         _;
     }
 
@@ -215,7 +191,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
 
-        // Assert than the strategy has been added correctly
         MStrat.StrategyParams memory actualStrategyParams = multistrategy.getStrategyParameters(address(strategy));
         MStrat.StrategyParams memory expectedStrategyParams = MStrat.StrategyParams({
             activation: block.timestamp,

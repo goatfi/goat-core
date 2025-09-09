@@ -77,6 +77,11 @@ library Errors {
     error DebtRatioAboveMaximum(uint256 debtRatio);
 
     /**
+     * @notice Thrown when trying to remove a strategy that has a non-zero `debtRatio`.
+     */
+    error StrategyWithActiveDebtRatio();
+
+    /**
      * @notice Thrown when trying to remove a strategy from `withdrawOrder` that still has debt.
      */
     error StrategyWithActiveDebt();
@@ -102,11 +107,6 @@ library Errors {
      * but the maximum allowed number of strategies has already been reached.
      */
     error MaximumAmountStrategies();
-
-    /**
-     * @notice Thrown when trying to remove a strategy that has a non-zero `debtRatio`.
-     */
-    error StrategyNotRetired();
 
     /*//////////////////////////////////////////////////////////////////////////
                                 STRATEGY ADAPTER

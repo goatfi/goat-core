@@ -177,16 +177,8 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function retireStrategy(address _strategy) external onlyManager onlyActiveStrategy(_strategy) {
-        debtRatio -= strategies[_strategy].debtRatio;
-        strategies[_strategy].debtRatio = 0;
-
-        emit StrategyRetired(_strategy);
-    }
-
-    /// @inheritdoc IMultistrategyManageable
     function removeStrategy(address _strategy) external onlyManager onlyActiveStrategy(_strategy) {
-        require(strategies[_strategy].debtRatio == 0, Errors.StrategyNotRetired());
+        require(strategies[_strategy].debtRatio == 0, Errors.StrategyWithActiveDebtRatio());
         require(strategies[_strategy].totalDebt == 0, Errors.StrategyWithActiveDebt());
 
         for(uint8 i = 0; i < MAXIMUM_STRATEGIES; ++i) {
@@ -214,10 +206,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setStrategyMinDebtDelta(address _strategy, uint256 _minDebtDelta) external 
-        onlyManager  
-        onlyActiveStrategy(_strategy) 
-    {
+    function setStrategyMinDebtDelta(address _strategy, uint256 _minDebtDelta) external onlyManager onlyActiveStrategy(_strategy) {
         require(strategies[_strategy].maxDebtDelta >= _minDebtDelta, Errors.InvalidDebtDelta());
 
         strategies[_strategy].minDebtDelta = _minDebtDelta;
@@ -226,10 +215,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setStrategyMaxDebtDelta(address _strategy, uint256 _maxDebtDelta) external 
-        onlyManager 
-        onlyActiveStrategy(_strategy) 
-    {
+    function setStrategyMaxDebtDelta(address _strategy, uint256 _maxDebtDelta) external onlyManager onlyActiveStrategy(_strategy) {
         require(strategies[_strategy].minDebtDelta <= _maxDebtDelta, Errors.InvalidDebtDelta());
 
         strategies[_strategy].maxDebtDelta = _maxDebtDelta;
@@ -254,10 +240,9 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     /// @return True if the order is valid. False if not valid.
     function _validateStrategyOrder(address[] memory _strategies) internal view returns (bool) {
         if(_strategies.length != MAXIMUM_STRATEGIES) return false;
-
+        uint8 activeCount;
         for(uint8 i = 0; i < MAXIMUM_STRATEGIES; ++i) {
             address strategy = _strategies[i];
-
             if(strategy != address(0)) {
                 if(strategies[strategy].activation == 0) return false;
                 // Start to check on the next strategy
@@ -265,6 +250,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
                     // Check that the strategy isn't duplicate
                     if(i != j && strategy == _strategies[j]) return false;
                 }
+                ++activeCount;
             } else {
                 // Check that the rest of the addresses are address(0)
                 for(uint8 j = i + 1; j < MAXIMUM_STRATEGIES; ++j) {
@@ -273,7 +259,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
                 break;
             }
         }
-        return true;
+        return activeCount == activeStrategies;
     }
 
     /// @notice Organizes the withdraw order by removing gaps and shifting strategies.

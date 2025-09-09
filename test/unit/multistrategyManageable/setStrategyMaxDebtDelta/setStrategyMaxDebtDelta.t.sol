@@ -9,10 +9,10 @@ import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.so
 contract SetStrategyMaxDebtDelta_Integration_Concrete_Test is Multistrategy_Base_Test {
 
     MockStrategyAdapter strategy;
+    uint256 minDebtDelta = 100 ether;
     uint256 maxDebtDelta;
 
     function test_RevertWhen_CallerNotManager() external {
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
         vm.prank(users.bob); multistrategy.setStrategyMaxDebtDelta(makeAddr("strategy"), maxDebtDelta);
     }
@@ -22,15 +22,12 @@ contract SetStrategyMaxDebtDelta_Integration_Concrete_Test is Multistrategy_Base
     }
 
     function test_RevertWhen_StrategyIsNotActive() external whenCallerIsManager {
-
-        // Expect Revert
         vm.expectRevert(abi.encodeWithSelector(Errors.StrategyNotActive.selector, makeAddr("strategy")));
         vm.prank(users.manager); multistrategy.setStrategyMaxDebtDelta(makeAddr("strategy"), maxDebtDelta);
     }
 
-    /// @dev Add a mock strategy to the multistrategy
     modifier whenStrategyIsActive() {
-        strategy = _createAndAddAdapter(5_000, 100 ether, type(uint256).max);
+        strategy = _createAndAddAdapter(5_000, minDebtDelta, type(uint256).max);
         _;
     }
 
@@ -42,7 +39,6 @@ contract SetStrategyMaxDebtDelta_Integration_Concrete_Test is Multistrategy_Base
         // Min debt delta is 100 so this is lower
         maxDebtDelta = 10 ether;
 
-        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidDebtDelta.selector));
         vm.prank(users.manager); multistrategy.setStrategyMaxDebtDelta(address(strategy), maxDebtDelta);
     }

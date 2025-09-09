@@ -44,10 +44,6 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @param _strategy The address of the newly added strategy.
     event StrategyAdded(address indexed _strategy);
 
-    /// @notice Emitted when a strategy is retired.
-    /// @param _strategy The address of the retired strategy.
-    event StrategyRetired(address indexed _strategy);
-
     /// @notice Emitted when a strategy is removed.
     /// @param _strategy The address of the removed strategy.
     event StrategyRemoved(address indexed _strategy);
@@ -121,11 +117,6 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
         uint256 _minDebtDelta,
         uint256 _maxDebtDelta
     ) external;
-
-    /// @notice Sets the strategy debtRatio to 0, which prevents any further deposits into the strategy.
-    /// @dev Retiring a strategy will set the approval of `asset` to the retired strategy to 0.
-    /// @param _strategy The address of the strategy that will be retired.
-    function retireStrategy(address _strategy) external;
 
     /// @notice Removes a strategy from `withdrawOrder`.
     /// @param _strategy The address of the strategy that will be removed.
