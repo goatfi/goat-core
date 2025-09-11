@@ -1,10 +1,10 @@
 sendReport.t.sol
-├── when the contract is paused
-│   └── it should revert with EnforcedPause error
-└── when the contract is not paused
-    ├── when the caller is not the owner
-    │   └── it should revert with OwnableUnauthorizedAccount error
-    └── when the caller is the owner
+├── when the caller is not the owner
+│   └── it should revert with OwnableUnauthorizedAccount error
+└── when the caller is the owner
+    ├── when the contract is paused
+    │   └── it should revert with EnforcedPause error
+    └── when the contract is not paused
         ├── when the slippage limit is not respected
         │   └── it should revert with SlippageCheckFailed error
         └── when the slippage limit is respected

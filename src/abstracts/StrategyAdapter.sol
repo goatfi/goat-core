@@ -105,18 +105,19 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
 
     /// @inheritdoc IStrategyAdapter
     function sendReportPanicked() external onlyOwner whenPaused {
-        _sendReportPanicked();
+        uint256 currentAssets = _balance();
+        (uint256 gain, uint256 loss) = _calculateGainAndLoss(currentAssets);
+        uint256 availableForRepay = currentAssets - gain;
+        IMultistrategy(multistrategy).strategyReport(availableForRepay, gain, loss);
     }
 
     /// @inheritdoc IStrategyAdapter
     /// @dev Any surplus on the withdraw won't be sent to the multistrategy.
     /// It will be eventually reported back as gain when sendReport is called.
-    function withdraw(uint256 _amount) external onlyMultistrategy whenNotPaused returns (uint256) {
+    function withdraw(uint256 _amount) external onlyMultistrategy whenNotPaused returns (uint256 withdrawn) {
         _tryWithdraw(_amount);
-        uint256 withdrawn = Math.min(_amount, _balance());
+        withdrawn = Math.min(_amount, _balance());
         IERC20(asset).safeTransfer(multistrategy, withdrawn);
-
-        return withdrawn;
     }
 
     /// @inheritdoc IStrategyAdapter
@@ -202,20 +203,6 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
         } else {
             IMultistrategy(multistrategy).strategyReport(0, currentBalance, loss);
         }
-    }
-
-    /// @notice Sends a report on the strategy's performance after the strategy has been panicked.
-    /// 
-    /// This function performs the following actions:
-    /// - Retrieves the current balance of the asset held by the contract.
-    /// - Calculates the gain and loss based on the current assets.
-    /// - Ensures that the gain is not used to repay the debt.
-    /// - Reports the available amount for repayment, the gain, and the loss to the multi-strategy.
-    function _sendReportPanicked() internal {
-        uint256 currentAssets = _balance();
-        (uint256 gain, uint256 loss) = _calculateGainAndLoss(currentAssets);
-        uint256 availableForRepay = currentAssets - gain;
-        IMultistrategy(multistrategy).strategyReport(availableForRepay, gain, loss);
     }
 
     /// @notice Attempts to withdraw a specified amount from the strategy.

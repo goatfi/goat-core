@@ -11,7 +11,6 @@ contract Unpause_Integration_Concrete_Test is StrategyAdapter_Base_Test {
     event Unpaused(address account);
 
     function test_RevertWhen_CallerNotOwner() external {
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, users.bob));
         vm.prank(users.bob); strategy.unpause();
     }
@@ -24,7 +23,6 @@ contract Unpause_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         external
         whenCallerOwner
     {
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.ExpectedPause.selector));
         vm.prank(users.manager); strategy.unpause();
     }
@@ -51,8 +49,7 @@ contract Unpause_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         assertEq(actualStrategyPaused, expectedStrategyPaused, "pause");
 
         // Assert contract allowances are set
-        address stakingContract = address(strategy.vault());
-        uint256 actualAssetAllowances = IERC20(strategy.asset()).allowance(address(strategy), stakingContract);
+        uint256 actualAssetAllowances = IERC20(strategy.asset()).allowance(address(strategy), address(strategy.vault()));
         uint256 expectedAssetAllowance = type(uint256).max;
         assertEq(actualAssetAllowances, expectedAssetAllowance, "unpause");
     }

@@ -17,6 +17,28 @@ contract TryWithdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
     modifier whenAmountGreaterThanZero() {
         _;
     }
+
+    function test_TryWithdraw_AmountLowerThanBalance() external whenAmountGreaterThanZero {
+        _requestCredit(1000 ether);
+
+        dai.mint(address(strategy), 10 ether);
+        strategy.tryWithdraw(5 ether);
+
+        uint256 actualStrategyBalance = dai.balanceOf(address(strategy));
+        uint256 expectedStrategyBalance = 10 ether;
+        assertEq(actualStrategyBalance, expectedStrategyBalance, "tryWithdraw, amount lower than balance");
+    }
+
+    function test_TryWithdraw_EqualToBalance() external whenAmountGreaterThanZero {
+        _requestCredit(1000 ether);
+
+        dai.mint(address(strategy), 10 ether);
+        strategy.tryWithdraw(10 ether);
+
+        uint256 actualStrategyBalance = dai.balanceOf(address(strategy));
+        uint256 expectedStrategyBalance = 10 ether;
+        assertEq(actualStrategyBalance, expectedStrategyBalance, "tryWithdraw, amount equal to balance");
+    }
     
     function test_RevertWhen_CurrentBalanceLowerThanDesiredBalance() 
         external
@@ -29,7 +51,6 @@ contract TryWithdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         strategy.setStakingSlippage(1500);
         _requestCredit(1000 ether);
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 900 ether, 850 ether));
         strategy.tryWithdraw(1000 ether);
     }
@@ -38,7 +59,7 @@ contract TryWithdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         _;
     }
 
-    function test_Withdraw() 
+    function test_TryWithdraw() 
         external
         whenAmountGreaterThanZero
         whenCurrentBalanceHigherThanDesiredBalance

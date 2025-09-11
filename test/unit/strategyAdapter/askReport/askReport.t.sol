@@ -10,7 +10,6 @@ import { Errors } from "src/libraries/Errors.sol";
 contract AskReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
 
     function test_RevertWhen_CallerNotMultistrategy() external {
-        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.CallerNotMultistrategy.selector, users.bob));
         vm.prank(users.bob); strategy.askReport();
     }
@@ -22,7 +21,6 @@ contract AskReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
     function test_RevertWhen_ContractPaused() external whenCallerMultistrategy {
         vm.prank(users.guardian); strategy.pause();
         
-        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         vm.prank(address(multistrategy)); strategy.askReport();
     }
@@ -36,18 +34,15 @@ contract AskReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         whenCallerMultistrategy
         whenContractNotPaused
     {
-        // Set the slippage limit of the strategy to 10%
         vm.prank(users.manager); strategy.setSlippageLimit(1_000);
-
-        // Set the staking slippage to be 15%
         vm.prank(users.manager); strategy.setStakingSlippage(1_500);
 
         // Request a credit from the multistrategy
         _requestCredit(1_000 ether);
 
         // Earn some tokens so we can test the slippage when withdrawing the gain
-        (strategy).earn(100 ether);
-        // Expect a revert
+        strategy.earn(100 ether);
+        
         vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 90 ether, 85 ether));
         vm.prank(address(multistrategy)); strategy.askReport();
     }

@@ -9,7 +9,6 @@ import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 
 contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Test {
     function test_RevertWhen_CallerNotOwner() external {
-        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, users.bob));
         vm.prank(users.bob); strategy.sendReportPanicked();
     }
@@ -66,13 +65,18 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
         uint256 expectedStrategyDebt = 0;
         assertEq(actualStrategyDebt, expectedStrategyDebt, "sendReportPanicked, strategy debt");
+
+        // Assert that the loss has been reported
+        uint256 actualLoss = (multistrategy.getStrategyParameters(address(strategy))).totalLoss;
+        uint256 expectedLoss = 1000 ether;
+        assertEq(actualLoss, expectedLoss, "sendReportPanicked, loss");
     }
 
     modifier whenCurrentAssetsNotZero() {
         _;
     }
 
-    function test_SendReport_StrategyNotRetired_Gain()
+    function test_SendReportPanicked_StrategyNotRetired_Gain()
         external
         whenCallerOwner
         whenGain(100 ether)
@@ -90,9 +94,14 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
         uint256 actualStrategyTotalAssets = IERC20(strategy.asset()).balanceOf(address(strategy));
         assertEq(actualStrategyDebt, actualStrategyTotalAssets, "sendReportPanicked, assets and debt match");
+
+        // Assert that the gain has been reported
+        uint256 actualGain = (multistrategy.getStrategyParameters(address(strategy))).totalGain;
+        uint256 expectedGain = 100 ether;
+        assertEq(actualGain, expectedGain, "sendReportPanicked, gain");
     }
 
-    function test_SendReport_StrategyNotRetired_Loss()
+    function test_SendReportPanicked_StrategyNotRetired_Loss()
         external
         whenCallerOwner
         whenLoss(100 ether)
@@ -110,6 +119,11 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
         uint256 actualStrategyTotalAssets = IERC20(strategy.asset()).balanceOf(address(strategy));
         assertEq(actualStrategyDebt, actualStrategyTotalAssets, "sendReportPanicked, assets and debt match");
+
+        // Assert that the loss has been reported
+        uint256 actualLoss = (multistrategy.getStrategyParameters(address(strategy))).totalLoss;
+        uint256 expectedLoss = 100 ether;
+        assertEq(actualLoss, expectedLoss, "sendReportPanicked, loss");
     }
 
     modifier whenStrategyRetired() {
@@ -117,7 +131,7 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         _;
     }
 
-    function test_SendReport_Gain()
+    function test_SendReportPanicked_Gain()
         external
         whenCallerOwner
         whenGain(100 ether)
@@ -127,7 +141,7 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
     {
         vm.prank(users.manager); strategy.sendReportPanicked();
 
-        // Assert that the strategy repaid the gain
+        // Assert that the strategy repaid the everything
         uint256 actualMultistrategyBalance = IERC20(strategy.asset()).balanceOf(address(multistrategy));
         uint256 expectedMultistrategyBalance = 1090 ether;
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
@@ -141,9 +155,14 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         uint256 actualStrategyTotalAssets = IERC20(strategy.asset()).balanceOf(address(strategy));
         uint256 expectedStrategyTotalAssets = 0;
         assertEq(actualStrategyTotalAssets, expectedStrategyTotalAssets, "sendReportPanicked, strategy total assets");
+
+        // Assert that the gain has been reported
+        uint256 actualGain = (multistrategy.getStrategyParameters(address(strategy))).totalGain;
+        uint256 expectedGain = 100 ether;
+        assertEq(actualGain, expectedGain, "sendReportPanicked, gain");
     }
 
-    function test_SendReport_Loss()
+    function test_SendReportPanicked_Loss()
         external
         whenCallerOwner
         whenLoss(100 ether)
@@ -167,5 +186,10 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         uint256 actualStrategyTotalAssets = IERC20(strategy.asset()).balanceOf(address(strategy));
         uint256 expectedStrategyTotalAssets = 0;
         assertEq(actualStrategyTotalAssets, expectedStrategyTotalAssets, "sendReportPanicked, strategy total assets");
+
+        // Assert that the loss has been reported
+        uint256 actualLoss = (multistrategy.getStrategyParameters(address(strategy))).totalLoss;
+        uint256 expectedLoss = 100 ether;
+        assertEq(actualLoss, expectedLoss, "sendReportPanicked, loss");
     }
 }

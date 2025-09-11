@@ -1,6 +1,6 @@
 setSlippageLimit.t.sol
 ├── when the caller is not the owner
-│   └── it should revert
+│   └── it should revert with OwnableUnauthorizedAccount error
 └── when the caller is the owner
     ├── when `_slippageLimit` is greater than MAX_SLIPPAGE
     │   └── it should revert with SlippageLimitExceeded error

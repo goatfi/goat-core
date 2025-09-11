@@ -8,7 +8,6 @@ import { Errors } from "src/libraries/Errors.sol";
 
 contract Withdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
     function test_RevertWhen_CallerNotMultistrategy() external {
-        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.CallerNotMultistrategy.selector, users.bob));
         vm.prank(users.bob); strategy.withdraw(1_000 ether);
     }
@@ -20,7 +19,6 @@ contract Withdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
     function test_RevertWhen_ContractPaused() external whenCallerMultistrategy {
         vm.prank(users.guardian); strategy.pause();
 
-        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         vm.prank(address(multistrategy)); strategy.withdraw(1_000 ether);
     }
@@ -34,16 +32,11 @@ contract Withdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         whenCallerMultistrategy
         whenContractNotPaused
     {
-        // Set the slippage limit of the strategy to 10%
         vm.prank(users.manager); strategy.setSlippageLimit(1_000);
-
-        // Set the staking slippage to be 15%
         strategy.setStakingSlippage(1_500);
 
-        // Request a credit from the multistrategy
         _requestCredit(1_000 ether);
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 900 ether, 850 ether));
         vm.prank(address(multistrategy)); strategy.withdraw(1_000 ether);
     }
@@ -52,7 +45,59 @@ contract Withdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         _;
     }
 
-    function test_Withdraw() 
+    function test_Withdraw_PositiveSlippage() 
+        external
+        whenCallerMultistrategy
+        whenContractNotPaused
+        whenSlippageLimitRespected
+    {
+        uint256 amount = 1_000 ether;
+        _requestCredit(amount);
+        strategy.setStakingSurplus(100); // 1% extra
+
+        // Make a withdraw
+        vm.prank(address(multistrategy)); uint256 withdrawn = strategy.withdraw(amount);
+
+        // Assert the strategy holds the surplus
+        uint256 actualStrategyAssets = strategy.totalAssets();
+        uint256 expectedStrategyAssets = 10 ether;
+        assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
+
+        // Assert the multistrategy has the assets in balance
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = withdrawn;
+        assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy balance");
+
+        // Assert that withdrawn is correct
+        assertEq(withdrawn, amount, "withrdraw, return");
+    }
+
+    function test_Withdraw_Exact() 
+        external
+        whenCallerMultistrategy
+        whenContractNotPaused
+        whenSlippageLimitRespected
+    {
+        uint256 amount = 1_000 ether;
+        _requestCredit(amount);
+
+        vm.prank(address(multistrategy)); uint256 withdrawn = strategy.withdraw(amount);
+
+        // Assert the strategy no longer has the assets
+        uint256 actualStrategyAssets = strategy.totalAssets();
+        uint256 expectedStrategyAssets = 0;
+        assertEq(actualStrategyAssets, expectedStrategyAssets, "withdraw, strategy assets");
+
+        // Assert the multistrategy has the assets in balance
+        uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyAssets = withdrawn;
+        assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy balance");
+
+        // Assert that withdrawn is correct
+        assertEq(withdrawn, amount, "withrdraw, return");
+    }
+
+    function test_Withdraw_NegativeSlippage() 
         external
         whenCallerMultistrategy
         whenContractNotPaused
@@ -64,11 +109,11 @@ contract Withdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         // Set the staking slippage to be 0.5%
         strategy.setStakingSlippage(50);
 
-        // Request a credit from the multistrategy
-        _requestCredit(1_000 ether);
+        uint256 amount = 1_000 ether;
+        _requestCredit(amount);
 
         // Make a withdraw
-        vm.prank(address(multistrategy)); uint256 withdrawn = strategy.withdraw(1_000 ether);
+        vm.prank(address(multistrategy)); uint256 withdrawn = strategy.withdraw(amount);
 
         // Assert the strategy no longer has the assets
         uint256 actualStrategyAssets = strategy.totalAssets();
@@ -79,5 +124,12 @@ contract Withdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         uint256 actualMultistrategyAssets = dai.balanceOf(address(multistrategy));
         uint256 expectedMultistrategyAssets = withdrawn;
         assertEq(actualMultistrategyAssets, expectedMultistrategyAssets, "withdraw, multistrategy balance");
+
+        // Assert that withdrawn is correct
+        assertEq(withdrawn, 995 ether, "withrdraw, return");
+
+        // Assert the strategy has more debt that totalassets
+        uint256 strategyTotalDebt = (multistrategy.getStrategyParameters(address(strategy))).totalDebt;
+        assertGt(strategyTotalDebt, strategy.totalAssets(), "withraw, strategy debt compared to total assets");
     }
 }

@@ -64,6 +64,20 @@ contract CalculateGainAndLoss_Integration_Concrete_Test is StrategyAdapter_Base_
         assertEq(actualLoss, expectedLoss);
     }
 
+    function test_CalculateGainAndLoss_CurrentAssetsEqualToTotalDebt() 
+        external
+        whenCurrentAssetsNotZero
+        whenTotalDebtNotZero
+    {
+        currentAssets = 1000 ether;
+        totalDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+
+        (uint256 actualGain, uint256 actualLoss) = strategy.calculateGainAndLoss(currentAssets);
+        (uint256 expectedGain, uint256 expectedLoss) = (0, 0);
+        assertEq(actualGain, expectedGain);
+        assertEq(actualLoss, expectedLoss);
+    }
+
     function test_CalculateGainAndLoss_CurrentAssetsLowerThanTotalDebt() 
         external
         whenCurrentAssetsNotZero

@@ -12,6 +12,7 @@ contract MockStrategyAdapter is StrategyAdapterHarness {
 
     MockERC4626 public vault;
     uint256 slippage;
+    uint256 surplus;
 
     /*//////////////////////////////////////////////////////////////////////////
                                 MOCK HELPER FUNCTIONS
@@ -42,6 +43,10 @@ contract MockStrategyAdapter is StrategyAdapterHarness {
         slippage = _slippage;
     }
 
+    function setStakingSurplus(uint256 _surplus) external {
+        surplus = _surplus;
+    }
+
     function withdrawFromStaking(uint256 _amount) external {
         _withdraw(_amount);
     }
@@ -55,9 +60,15 @@ contract MockStrategyAdapter is StrategyAdapterHarness {
     }
 
     function _withdraw(uint256 _amount) internal override {
+        require(!(surplus > 0 && slippage > 0), "Surplus and slippage cannot both be positive");
         vault.withdraw(_amount, address(this), address(this));
-        uint256 lostAmount = Math.mulDiv(_amount, slippage, MAX_SLIPPAGE);
-        IERC20(asset).safeTransfer(address(42069), lostAmount);
+        if(surplus > 0) {
+            uint256 earnedAmount = Math.mulDiv(_amount, surplus, MAX_SLIPPAGE);
+            IMockERC20(asset).mint(address(this), earnedAmount);
+        } else {
+            uint256 lostAmount = Math.mulDiv(_amount, slippage, MAX_SLIPPAGE);
+            IERC20(asset).safeTransfer(address(42069), lostAmount);
+        }
     }
 
     function _emergencyWithdraw() internal override {

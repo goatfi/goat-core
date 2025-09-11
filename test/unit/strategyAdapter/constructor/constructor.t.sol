@@ -3,9 +3,17 @@
 pragma solidity ^0.8.27;
 
 import { StrategyAdapter_Base_Test } from "../../../shared/StrategyAdapter_Base.t.sol";
+import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract Constructor_Unit_Test is StrategyAdapter_Base_Test {
+    MockStrategyAdapter adapter;
+
+    function test_RevertWhen_MultistrategyDoesNOTImplementERC4626() public {
+        vm.expectRevert();
+        adapter = new MockStrategyAdapter(makeAddr("dummy"));
+    }
+
     function test_Constructor_Success() external {
         assertEq(strategy.owner(), users.manager, "owner");
         assertFalse(strategy.paused(), "paused");
