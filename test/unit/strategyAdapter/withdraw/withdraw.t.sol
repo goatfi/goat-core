@@ -129,7 +129,7 @@ contract Withdraw_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         assertEq(withdrawn, 995 ether, "withrdraw, return");
 
         // Assert the strategy has more debt that totalassets
-        uint256 strategyTotalDebt = (multistrategy.getStrategyParameters(address(strategy))).totalDebt;
+        uint256 strategyTotalDebt = multistrategy.strategyTotalDebt(address(strategy));
         assertGt(strategyTotalDebt, strategy.totalAssets(), "withraw, strategy debt compared to total assets");
     }
 }

@@ -27,7 +27,7 @@ contract CalculateGainAndLoss_Integration_Concrete_Test is StrategyAdapter_Base_
         external
         whenTotalDebtNotZero
     {
-        totalDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        totalDebt = multistrategy.strategyTotalDebt(address(strategy));
 
         (uint256 actualGain, uint256 actualLoss) = strategy.calculateGainAndLoss(currentAssets);
         (uint256 expectedGain, uint256 expectedLoss) = (0, totalDebt);
@@ -56,7 +56,7 @@ contract CalculateGainAndLoss_Integration_Concrete_Test is StrategyAdapter_Base_
         whenTotalDebtNotZero
     {
         currentAssets = 1100 ether;
-        totalDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        totalDebt = multistrategy.strategyTotalDebt(address(strategy));
 
         (uint256 actualGain, uint256 actualLoss) = strategy.calculateGainAndLoss(currentAssets);
         (uint256 expectedGain, uint256 expectedLoss) = (currentAssets - totalDebt, 0);
@@ -70,7 +70,7 @@ contract CalculateGainAndLoss_Integration_Concrete_Test is StrategyAdapter_Base_
         whenTotalDebtNotZero
     {
         currentAssets = 1000 ether;
-        totalDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        totalDebt = multistrategy.strategyTotalDebt(address(strategy));
 
         (uint256 actualGain, uint256 actualLoss) = strategy.calculateGainAndLoss(currentAssets);
         (uint256 expectedGain, uint256 expectedLoss) = (0, 0);
@@ -84,7 +84,7 @@ contract CalculateGainAndLoss_Integration_Concrete_Test is StrategyAdapter_Base_
         whenTotalDebtNotZero
     {
         currentAssets = 900 ether;
-        totalDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        totalDebt = multistrategy.strategyTotalDebt(address(strategy));
 
         (uint256 actualGain, uint256 actualLoss) = strategy.calculateGainAndLoss(currentAssets);
         (uint256 expectedGain, uint256 expectedLoss) = (0, totalDebt - currentAssets);

@@ -61,7 +61,7 @@ contract ReportLoss_Integration_Concrete_Test is MultistrategyHarness_Base_Test 
         uint256 expectedStrategyTotalLoss = 0;
         assertEq(actualStrategyTotalLoss, expectedStrategyTotalLoss, "reportLoss strat totalLoss");
 
-        uint256 actualStrategyTotalDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyTotalDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 expectedStrategyTotalDebt = 500 ether;
         assertEq(actualStrategyTotalDebt, expectedStrategyTotalDebt, "reportLoss strate totalDebt");
 
@@ -90,7 +90,7 @@ contract ReportLoss_Integration_Concrete_Test is MultistrategyHarness_Base_Test 
         uint256 expectedStrategyTotalLoss = reportedLoss;
         assertEq(actualStrategyTotalLoss, expectedStrategyTotalLoss, "reportLoss strat totalLoss");
 
-        uint256 actualStrategyTotalDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyTotalDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 expectedStrategyTotalDebt = 400 ether;
         assertEq(actualStrategyTotalDebt, expectedStrategyTotalDebt, "reportLoss strate totalDebt");
 

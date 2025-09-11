@@ -62,7 +62,7 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         assertEq(actualFeeRecipientBalance, expectedFeeRecipientBalance, "sendReportPanicked, fee recipient balance");
 
         // Assert the debt of this strategy is now 0.
-        uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 expectedStrategyDebt = 0;
         assertEq(actualStrategyDebt, expectedStrategyDebt, "sendReportPanicked, strategy debt");
 
@@ -91,7 +91,7 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
 
         // Assert that the strategy has the same balance of assets as debt amount
-        uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 actualStrategyTotalAssets = IERC20(strategy.asset()).balanceOf(address(strategy));
         assertEq(actualStrategyDebt, actualStrategyTotalAssets, "sendReportPanicked, assets and debt match");
 
@@ -116,7 +116,7 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
 
         // Assert that the strategy has the same balance of assets as debt amount
-        uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 actualStrategyTotalAssets = IERC20(strategy.asset()).balanceOf(address(strategy));
         assertEq(actualStrategyDebt, actualStrategyTotalAssets, "sendReportPanicked, assets and debt match");
 
@@ -147,7 +147,7 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
 
         // Assert that the strategy total debt is 0
-        uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 expectedStrategyTotalDebt = 0;
         assertEq(actualStrategyDebt, expectedStrategyTotalDebt, "sendReportPanicked, strategy total debt");
 
@@ -178,7 +178,7 @@ contract SendReportPanicked_Integration_Concrete_Test is StrategyAdapter_Base_Te
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
 
         // Assert that the strategy total debt is 0
-        uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 expectedStrategyTotalDebt = 0;
         assertEq(actualStrategyDebt, expectedStrategyTotalDebt, "sendReportPanicked, strategy total debt");
 

@@ -167,12 +167,12 @@ contract Redeem_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyDebt, expectedMultistrategyDebt, "redeem, multistrategy total debt");
 
         // Assert strategy_one totalDebt
-        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
+        uint256 actualStrategyOneDebt = multistrategy.strategyTotalDebt(address(strategyOne));
         uint256 expectedStrategyOneDebt = 0;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "redeem, strategy one debt");
 
         // Assert strategy_two totalDebt
-        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategyTwo)).totalDebt;
+        uint256 actualStrategyTwoDebt = multistrategy.strategyTotalDebt(address(strategyTwo));
         uint256 expectedStrategyTwoDebt = 0 ether;
         assertEq(actualStrategyTwoDebt, expectedStrategyTwoDebt, "redeem, strategy two debt");
     }
@@ -192,7 +192,7 @@ contract Redeem_Integration_Concrete_Test is Multistrategy_Base_Test {
         vm.prank(users.bob); multistrategy.redeem(amountToRedeem, users.bob, users.bob);
 
         // Assert strategy one has no debt
-        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
+        uint256 actualStrategyOneDebt = multistrategy.strategyTotalDebt(address(strategyOne));
         uint256 expectedStrategyOneDebt = 0;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "redeem, strategy one debt");
 
@@ -231,12 +231,12 @@ contract Redeem_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyDebt, expectedMultistrategyDebt, "redeem, multistrategy total debt");
 
         // Assert strategy_one totalDebt
-        actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
+        actualStrategyOneDebt = multistrategy.strategyTotalDebt(address(strategyOne));
         expectedStrategyOneDebt = 0;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "redeem, strategy one debt");
 
         // Assert strategy_two totalDebt
-        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategyTwo)).totalDebt;
+        uint256 actualStrategyTwoDebt = multistrategy.strategyTotalDebt(address(strategyTwo));
         uint256 expectedStrategyTwoDebt = 100 ether;
         assertEq(actualStrategyTwoDebt, expectedStrategyTwoDebt, "redeem, strategy two debt");
     }
@@ -285,12 +285,12 @@ contract Redeem_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyDebt, expectedMultistrategyDebt, "redeem, multistrategy total debt");
 
         // Assert strategy_one totalDebt
-        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
+        uint256 actualStrategyOneDebt = multistrategy.strategyTotalDebt(address(strategyOne));
         uint256 expectedStrategyOneDebt = 0;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "redeem, strategy one debt");
 
         // Assert strategy_two totalDebt
-        uint256 actualStrategyTwoDebt = multistrategy.getStrategyParameters(address(strategyTwo)).totalDebt;
+        uint256 actualStrategyTwoDebt = multistrategy.strategyTotalDebt(address(strategyTwo));
         uint256 expectedStrategyTwoDebt = 200 ether;
         assertEq(actualStrategyTwoDebt, expectedStrategyTwoDebt, "redeem, strategy two debt");
     }
@@ -340,7 +340,7 @@ contract Redeem_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualMultistrategyDebt, expectedMultistrategyDebt, "redeem, multistrategy total debt");
 
         // Assert strategy_one totalDebt
-        uint256 actualStrategyOneDebt = multistrategy.getStrategyParameters(address(strategyOne)).totalDebt;
+        uint256 actualStrategyOneDebt = multistrategy.strategyTotalDebt(address(strategyOne));
         uint256 expectedStrategyOneDebt = 500 ether;
         assertEq(actualStrategyOneDebt, expectedStrategyOneDebt, "redeem, strategy one debt");
     }

@@ -73,7 +73,7 @@ contract AskReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
 
         // Assert the strategy has the same balance of totalAssets as totalDebt
-        uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 actualStrategyTotalAssets = strategy.totalAssets();
         assertEq(actualStrategyDebt, actualStrategyTotalAssets, "sendReportPanicked, assets and debt match");
     }
@@ -95,7 +95,7 @@ contract AskReport_Integration_Concrete_Test is StrategyAdapter_Base_Test {
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
 
         // Assert the strategy has the same balance of totalAssets as totalDebt
-        uint256 actualStrategyDebt = multistrategy.getStrategyParameters(address(strategy)).totalDebt;
+        uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 actualStrategyTotalAssets = strategy.totalAssets();
         assertEq(actualStrategyDebt, actualStrategyTotalAssets, "sendReportPanicked, assets and debt match");
     }
