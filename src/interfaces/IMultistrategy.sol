@@ -23,9 +23,6 @@ interface IMultistrategy is IMultistrategyManageable {
     /// @notice Amount of tokens that are locked as "locked profit" and can't be withdrawn.
     function lockedProfit() external view returns (uint256);
 
-    /// @notice Returns the value of a share in `asset` value.
-    function pricePerShare() external view returns (uint256);
-
     /// @notice Returns the amount of tokens a strategy can borrow from this Multistrategy.
     /// @param strategy Address of the strategy we want to know the credit available for.
     function creditAvailable(address strategy) external view returns (uint256);
@@ -40,6 +37,9 @@ interface IMultistrategy is IMultistrategyManageable {
 
     /// @notice Returns the aggregate PnL of all strategies at max slippage.
     function currentPnL() external view returns (uint256, uint256);
+
+    /// @notice Returns the current available liqudity of this Multistrategy.
+    function availableLiquidity() external view returns (uint256);
     
     /// @notice Send the available credit of the caller to the caller.
     /// @dev Reverts if the caller is *NOT* an active strategy

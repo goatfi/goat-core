@@ -80,17 +80,27 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @inheritdoc IERC4626
     /// @dev Limited by the deposit limit
     function maxDeposit(address) public view override returns (uint256) {
-        if(totalAssets() >= depositLimit) {
-            return 0;
-        } else {
-            return depositLimit - totalAssets();
-        }
+        return totalAssets() >= depositLimit ? 0 : depositLimit - totalAssets();
     }
 
     /// @inheritdoc IERC4626
     /// @dev Limited by the deposit limit
     function maxMint(address _receiver) public view override returns (uint256) {
-        return convertToShares(maxDeposit(_receiver));
+        return _convertToShares(maxDeposit(_receiver), Math.Rounding.Floor);
+    }
+
+    /// @inheritdoc IERC4626
+    /// @dev Limited by the liquidity available
+    function maxWithdraw(address _owner) public view override returns (uint256) {
+        uint256 maxAssets = _convertToAssets(balanceOf(_owner), Math.Rounding.Floor);
+        return Math.min(maxAssets, _availableLiquidity());
+    }
+
+    /// @inheritdoc IERC4626
+    /// @dev Limited by the liquidity available
+    function maxRedeem(address _owner) public view override returns (uint256) {
+        uint256 maxShares = _convertToShares(_availableLiquidity(), Math.Rounding.Floor);
+        return Math.min(balanceOf(_owner), maxShares);
     }
 
     /// @inheritdoc IERC4626
@@ -117,11 +127,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @inheritdoc IMultistrategy
-    function pricePerShare() external view returns (uint256) {
-        return convertToAssets(1 ether);
-    }
-
-    /// @inheritdoc IMultistrategy
     function creditAvailable(address _strategy) external view returns (uint256) {
         return _creditAvailable(_strategy);
     }
@@ -136,8 +141,14 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         return strategies[_strategy].totalDebt;
     }
 
+    /// @inheritdoc IMultistrategy
     function currentPnL() external view returns (uint256, uint256) {
         return _currentPnL();
+    }
+
+    /// @inheritdoc IMultistrategy
+    function availableLiquidity() external view returns (uint256) {
+        return _availableLiquidity();
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -351,6 +362,19 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         }
 
         return (totalProfit, totalLoss);
+    }
+
+    function _availableLiquidity() internal view returns (uint256 liquidity) {
+        liquidity = _balance();
+        for(uint256 i = 0; i < activeStrategies; ++i) {
+            uint256 strategyTotalAssets = IStrategyAdapter(withdrawOrder[i]).totalAssets();
+            uint256 strategyAvailableLiquidity = IStrategyAdapter(withdrawOrder[i]).availableLiquidity();
+            liquidity += Math.min(strategyTotalAssets, strategyAvailableLiquidity);
+
+            // Return early because if a strategy has more assets than liquidity,
+            // The liquidity in the following strategies cannot be reached.
+            if(strategyTotalAssets > strategyAvailableLiquidity) break;
+        }
     }
 
     function _decimalsOffset() internal view override returns (uint8) {
