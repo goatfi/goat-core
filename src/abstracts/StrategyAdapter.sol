@@ -144,12 +144,6 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @notice Calculates the gain and loss based on current assets.
-    /// 
-    /// This function performs the following actions:
-    /// - Retrieves the total debt of the strategy from the multi-strategy contract.
-    /// - Determines whether the current assets are greater than or equal to the total debt to calculate the gain.
-    /// - If the current assets are less than the total debt, calculates the loss.
-    /// 
     /// @param _currentAssets The current assets held by the strategy.
     /// @return gain The calculated gain.
     /// @return loss The calculated loss.
@@ -167,9 +161,9 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
         return IERC20(asset).balanceOf(address(this));
     }
 
-    /// @notice Returns the amount of `asset` the underlying strategy holds. In the case this strategy
-    /// has swapped `asset` for another asset, it should return the most approximate value.
-    /// @dev Child contract must implement the logic to calculate the amount of assets.
+    /// @notice Returns the amount of `asset` the underlying strategy holds. 
+    /// @dev In the case this strategy has swapped `asset` for another asset, it should return the most approximate value.
+    /// Child contract must implement the logic to calculate the amount of assets.
     function _totalAssets() internal virtual view returns (uint256);
 
     /// @notice Returns the available liquidity of this adapter.
@@ -181,13 +175,6 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @notice Sends a report on the strategy's performance.
-    /// 
-    /// This function performs the following actions:
-    /// - Calculates the current assets of the strategy.
-    /// - Attempts to withdraw the repayment amount plus any gain.
-    /// - Ensures that the gain is not used to repay the debt.
-    /// - Reports the available amount for repayment, the gain, and the loss to the multi-strategy.
-    /// 
     /// @param _repayAmount The amount to be repaid to the multi-strategy.
     function _sendReport(uint256 _repayAmount) internal {
         (uint256 gain, uint256 loss) = _calculateGainAndLoss(_totalAssets());
@@ -206,12 +193,6 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     }
 
     /// @notice Attempts to withdraw a specified amount from the strategy.
-    /// 
-    /// This function performs the following actions:
-    /// - Calls the internal `_withdraw` function to withdraw the desired amount.
-    /// - Checks the current balance of the contract after the withdrawal.
-    /// - If the balance is less than the desired amount, it reverts with an insufficient balance error.
-    /// 
     /// @param _amount The amount to withdraw from the strategy.
     function _tryWithdraw(uint256 _amount) internal {
         if(_amount == 0 || _amount <= _balance()) return;
@@ -237,7 +218,6 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     /// @notice Withdraws as much funds as possible from the underlying strategy.
     /// @dev Child contract must implement the logic to withdraw as much funds as possible.
     /// The withdraw process shouldn't have a slippage check, as it is in an emergency situation.
-    /// 
     function _emergencyWithdraw() internal virtual;
 
     /// @dev Grants allowance for `asset` to the contracts used by the strategy adapter.

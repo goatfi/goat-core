@@ -244,16 +244,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @notice Calculates the available credit for a strategy.
-    /// 
-    /// This function performs the following actions:
-    /// - Determines the total assets and debt limits for both the multi-strategy and the specific strategy.
-    /// - Checks if the strategy or the multi-strategy has exceeded their respective debt limits, in which case no new credit is offered.
-    /// - Calculates the potential credit as the difference between the strategy's debt limit and its current debt.
-    /// - Limits the potential credit by the maximum available credit of the multi-strategy.
-    /// - Ensures the potential credit is within the strategy's minimum and maximum debt delta bounds.
-    /// - Returns zero if the available credit is below the strategy's minimum debt delta.
-    /// - Returns the available credit, ensuring it does not exceed the strategy's maximum debt delta.
-    /// 
     /// @param _strategy The address of the strategy for which to determine the available credit.
     /// @return The amount of credit available for the given strategy.
     function _creditAvailable(address _strategy) internal view returns (uint256) {
@@ -283,13 +273,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @notice Calculates the excess debt of a strategy.
-    /// 
-    /// This function performs the following actions:
-    /// - If the overall debt ratio is zero, it returns the total debt of the strategy as excess debt.
-    /// - Calculates the strategy's debt limit based on its debt ratio and the total assets.
-    /// - If the strategy's total debt is less than or equal to its debt limit, it returns zero indicating no excess debt.
-    /// - If the strategy's total debt exceeds its debt limit, it returns the difference as the excess debt.
-    /// 
     /// @param _strategy The address of the strategy for which to determine the debt excess.
     /// @return The amount of excess debt for the given strategy.
     function _debtExcess(address _strategy) internal view returns (uint256) {
@@ -314,12 +297,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @notice Calculate the current locked profit.
-    /// 
-    /// This function performs the following actions:
-    /// - Calculates the locked funds ratio based on the time elapsed since the last report and the locked profit degradation rate.
-    /// - If the locked funds ratio is less than the degradation coefficient, it computes the remaining locked profit by reducing it proportionally.
-    /// - If the locked funds ratio is greater than or equal to the degradation coefficient, it returns zero indicating no locked profit remains.
-    /// 
     /// @return The calculated current locked profit.
     function _calculateLockedProfit() internal view returns (uint256) {
         uint256 lockedFundsRatio = (block.timestamp - lastReport) * LOCKED_PROFIT_DEGRADATION;
@@ -330,22 +307,9 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         return 0;
     }
 
-    /**
-     * @notice Calculates the current profit and loss (PnL) across all active strategies.
-     * 
-     * This function performs the following actions:
-     * - Iterates through the `withdrawOrder` array, which defines the order in which strategies are withdrawn from.
-     * - For each strategy in the `withdrawOrder`:
-     *   - If the strategy address is zero, it breaks the loop, indicating the end of the list.
-     *   - If the strategy has no debt, it skips to the next strategy.
-     *   - Otherwise, it retrieves the current profit and loss (PnL) from the strategy by calling `currentPnL`.
-     *   - Adds the strategy's profit to the total profit, after deducting the performance fee.
-     *   - Adds the strategy's loss to the total loss.
-     * - Returns the total profit and total loss across all active strategies.
-     * 
-     * @return totalProfit The total profit across all active strategies, after deducting the performance fee.
-     * @return totalLoss The total loss across all active strategies.
-     */
+    /// @notice Calculates the current profit and loss (PnL) across all active strategies.
+    /// @return totalProfit The total profit across all active strategies, after deducting the performance fee.
+    /// @return totalLoss The total loss across all active strategies.
     function _currentPnL() internal view returns (uint256, uint256) {
         if (activeStrategies == 0) return (0, 0);
         uint256 totalProfit = 0;
@@ -386,14 +350,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @notice Handles deposits into the contract.
-    /// 
-    /// This function performs the following actions:
-    /// - Validates that the receiver address is not zero or the contract address itself.
-    /// - Ensures that the deposited amount is greater than zero.
-    /// - Transfers the assets from the caller to the contract.
-    /// - Mints the corresponding shares for the receiver.
-    /// - Emits a `Deposit` event with the caller, receiver, amount of assets, and number of shares.
-    /// 
     /// @param _caller The address of the entity initiating the deposit.
     /// @param _receiver The address of the recipient to receive the shares.
     /// @param _assets The amount of assets being deposited.
@@ -409,18 +365,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @notice Handles withdrawals from the contract.
-    /// 
-    /// This function performs the following actions:
-    /// - If the caller is not the owner, it checks and spends the allowance for the withdrawal.
-    /// - Ensures that the amount to be withdrawn is greater than zero.
-    /// - If the requested withdrawal amount exceeds the available balance, it withdraws the necessary amount from the strategies in the withdrawal order.
-    ///   - Iterates through the withdrawal queue, withdrawing from each strategy until the balance requirement is met or the queue is exhausted.
-    ///   - Updates the total debt of both the strategy and the contract as assets are withdrawn.
-    ///   - Requests the strategy to report, accounting for potential gains or losses.
-    /// - Reverts if the withdrawal process does not result in sufficient balance.
-    /// - Burns the corresponding shares and transfers the requested assets to the receiver.
-    /// - Emits a `Withdraw` event with the caller, receiver, owner, amount of assets withdrawn, and shares burned.
-    /// 
     /// @param _caller The address of the entity initiating the withdrawal.
     /// @param _receiver The address of the recipient to receive the withdrawn assets.
     /// @param _owner The address of the owner of the shares being withdrawn.
@@ -478,14 +422,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @notice Requests credit for an active strategy.
-    /// 
-    /// This function performs the following actions:
-    /// - Calculates the available credit for the strategy using `_creditAvailable`.
-    /// - If credit is available, it updates the total debt for the strategy and the multistrategy contract.
-    /// - Transfers the calculated credit amount to the strategy.
-    ///
-    /// Emits a `CreditRequested` event.
-    ///
     /// @dev This function should be called only by active strategies when they need to request credit.
     function _requestCredit() internal returns (uint256){
         uint256 credit = _creditAvailable(msg.sender);
@@ -501,20 +437,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @notice Reports the performance of a strategy.
-    /// 
-    /// This function performs the following actions:
-    /// - Validates that the reporting strategy does not claim both a gain and a loss simultaneously.
-    /// - Checks that the strategy has sufficient tokens to cover the debt repayment and the gain.
-    /// - If there is a loss, it realizes the loss.
-    /// - Calculates and deducts the performance fee from the gain.
-    /// - Determines the excess debt of the strategy.
-    /// - Adjusts the strategy's and contract's total debt accordingly.
-    /// - Calculates and updates the new locked profit after accounting for any losses.
-    /// - Updates the reporting timestamps for the strategy and the contract.
-    /// - Transfers the debt repayment and the gains to this contract.
-    ///
-    /// Emits a `StrategyReported` event.
-    ///
     /// @param _debtRepayment The amount of debt being repaid by the strategy.
     /// @param _gain The amount of profit reported by the strategy.
     /// @param _loss The amount of loss reported by the strategy.
@@ -555,13 +477,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @notice Reports a loss for a strategy.
-    /// 
-    /// This function performs the following actions:
-    /// - Validates that the loss reported by the strategy does not exceed its total debt.
-    /// - Updates the strategy's total loss by adding the reported loss.
-    /// - Reduces the strategy's total debt by the reported loss.
-    /// - Adjusts the contract's total debt by reducing it with the reported loss.
-    ///
     /// @param _strategy The address of the strategy reporting the loss.
     /// @param _loss The amount of loss reported by the strategy.
     function _reportLoss(address _strategy, uint256 _loss) internal {

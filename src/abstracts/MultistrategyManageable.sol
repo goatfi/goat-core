@@ -226,14 +226,6 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @notice Validates the order of strategies for withdrawals.
-    /// 
-    /// This function performs the following actions:
-    /// - Ensures the length of the provided strategies array matches the maximum number of strategies.
-    /// - Iterates through the provided strategies to validate each one:
-    ///   - Checks that non-zero addresses correspond to active strategies.
-    ///   - Ensures there are no duplicate strategies in the provided array.
-    /// - If an address in the provided array is zero, it checks that all subsequent addresses are also zero.
-    /// 
     /// @param _strategies The array of strategy addresses to validate.
     /// @return True if the order is valid. False if not valid.
     function _validateStrategyOrder(address[] memory _strategies) internal view returns (bool) {
@@ -261,11 +253,6 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @notice Organizes the withdraw order by removing gaps and shifting strategies.
-    /// 
-    /// This function performs the following actions:
-    /// - Iterates through the withdraw order array.
-    /// - For each strategy, if it encounters an empty slot (address(0)), it shifts subsequent strategies up to fill the gap.
-    /// - Ensures that any empty slots are moved to the end of the array.
     function _organizeWithdrawOrder() internal {
         uint8 position = 0;
         for(uint8 i = 0; i < MAXIMUM_STRATEGIES; ++i) {
