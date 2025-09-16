@@ -6,8 +6,6 @@ import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 
 contract DebtExcess_Integration_Concrete_Test is Multistrategy_Base_Test {
     MockStrategyAdapter strategy;
-    uint256 minDebtDelta = 100 ether;
-    uint256 maxDebtDelta = 10_000 ether;
 
     function test_DebtExcess_ZeroAddress() external view {
         uint256 actualDebtExcess = multistrategy.debtExcess(address(strategy));
@@ -16,7 +14,7 @@ contract DebtExcess_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     modifier whenNotZeroAddress() {
-        strategy = _createAndAddAdapter(5_000, minDebtDelta, maxDebtDelta);
+        strategy = _createAndAddAdapter(5_000, 100 ether, type(uint256).max);
         _;
     }
 
@@ -34,25 +32,10 @@ contract DebtExcess_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    function test_DebtExcess_NotActiveStrategy()
-        external
-        whenNotZeroAddress
-        whenThereAreDeposits
-    {
-        uint256 actualDebtExcess = multistrategy.debtExcess(address(strategy));
-        uint256 expectedDebtExcess = 0;
-        assertEq(actualDebtExcess, expectedDebtExcess, "debtExcess");
-    }
-
-    modifier whenActiveStrategy() {
-        _;
-    }
-
     function test_DebtExcess_ZeroDebtRatio() 
         external
         whenNotZeroAddress
         whenThereAreDeposits
-        whenActiveStrategy
     {
         // Strategy requests a credit. So it will have debt
         vm.prank(users.manager); strategy.requestCredit();
@@ -73,7 +56,6 @@ contract DebtExcess_Integration_Concrete_Test is Multistrategy_Base_Test {
         external
         whenNotZeroAddress
         whenThereAreDeposits
-        whenActiveStrategy
         whenNotZeroDebtRatio
     {
         // Strategy requests a credit. So it will have debt
@@ -95,7 +77,6 @@ contract DebtExcess_Integration_Concrete_Test is Multistrategy_Base_Test {
         external
         whenNotZeroAddress
         whenThereAreDeposits
-        whenActiveStrategy
         whenNotZeroDebtRatio
         whenDebtAboveDebtLimit
     {

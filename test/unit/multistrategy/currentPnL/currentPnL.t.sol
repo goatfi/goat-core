@@ -34,86 +34,55 @@ contract CurrentPnL_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    modifier whenWithdrawOrderHasZeroAddress() {
-        address[] memory newOrder = new address[](10);
-        newOrder[0] = address(strategy);
-        newOrder[1] = address(0);
-        vm.prank(users.manager); multistrategy.setWithdrawOrder(newOrder);
-        _;
-    }
-
-    function test_CurrentPnL_WhenWithdrawOrderHasZeroAddress()
-        external
-        whenActiveStrategiesGreaterThanZero
-        whenWithdrawOrderHasZeroAddress
-    {
-        // Deposit and earn to set up profit
-        _userDeposit(users.bob, 1000 ether);
-        vm.prank(users.manager); uint256 creditRequested = strategy.requestCredit();
-        assertGt(creditRequested, 0);
-        strategy.earn(100 ether);
-
-        (uint256 profit, uint256 loss) = multistrategy.currentPnL();
-        uint256 expectedProfit = 100 ether * (MAX_BPS - PERFORMANCE_FEE) / MAX_BPS;
-        assertEq(profit, expectedProfit, "Profit should include only strategies before zero address");
-        assertEq(loss, 0, "Loss should be 0");
-    }
-
-    function test_CurrentPnL_WhenStrategyHasZeroDebt_ContinuesToNextStrategy()
-        external
-        whenActiveStrategiesGreaterThanZero
-        whenAllStrategiesHaveNonZeroAddresses
-    {
-        // Create second strategy with zero debt
-        _createAndAddAdapter(2000, 100 ether, 1000 ether);
-        _userDeposit(users.bob, 1000 ether);
-
-        // Only first strategy requests credit (totalDebt > 0)
-        vm.prank(users.manager); strategy.requestCredit();
-        strategy.earn(100 ether);
-
-        (uint256 profit, uint256 loss) = multistrategy.currentPnL();
-        uint256 expectedProfit = 100 ether * (MAX_BPS - PERFORMANCE_FEE) / MAX_BPS;
-        assertEq(profit, expectedProfit, "Profit should only include strategy with debt");
-        assertEq(loss, 0, "Loss should be 0");
-    }
-
-    function test_CurrentPnL_WhenCurrentPnLCallReverts_Reverts()
+    function test_CurrentPnL_CalculatesPositivePnL()
         external
         whenActiveStrategiesGreaterThanZero
         whenAllStrategiesHaveNonZeroAddresses
         whenStrategiesHavePositiveDebt
     {
-        // Mock currentPnL to revert
-        vm.mockCallRevert(
-            address(strategy),
-            abi.encodeWithSelector(IStrategyAdapter.currentPnL.selector),
-            "Mock revert"
-        );
+        // Create more strategies
+        MockStrategyAdapter strategyTwo = _createAndAddAdapter(2000, 100 ether, 1000 ether);
+        MockStrategyAdapter strategyThree = _createAndAddAdapter(3000, 100 ether, 1000 ether);
+        vm.prank(users.manager); strategyTwo.requestCredit();
+        vm.prank(users.manager); strategyThree.requestCredit();
 
-        vm.expectRevert("Mock revert");
-        multistrategy.currentPnL();
-    }
-
-    function test_CurrentPnL_WhenCurrentPnLSucceeds_CalculatesAndAccumulatesProfitLoss()
-        external
-        whenActiveStrategiesGreaterThanZero
-        whenAllStrategiesHaveNonZeroAddresses
-        whenStrategiesHavePositiveDebt
-    {
-        // Create second strategy
-        MockStrategyAdapter strategy2 = _createAndAddAdapter(2000, 100 ether, 1000 ether);
-        vm.prank(users.manager); strategy2.requestCredit();
-
-        // Earn on both
+        // Earn on two
         strategy.earn(100 ether);
-        strategy2.earn(200 ether);
+        strategyTwo.earn(200 ether);
+        strategyThree.lose(100 ether);
 
         (uint256 totalProfit, uint256 totalLoss) = multistrategy.currentPnL();
         uint256 expectedProfit1 = 100 ether * (MAX_BPS - PERFORMANCE_FEE) / MAX_BPS;
         uint256 expectedProfit2 = 200 ether * (MAX_BPS - PERFORMANCE_FEE) / MAX_BPS;
-        uint256 expectedTotalProfit = expectedProfit1 + expectedProfit2;
+        uint256 expectedLoss3 = 100 ether;
+        uint256 expectedTotalProfit = expectedProfit1 + expectedProfit2 - expectedLoss3;
         assertEq(totalProfit, expectedTotalProfit, "Total profit should be sum of calculated profits");
         assertEq(totalLoss, 0, "Total loss should be 0");
+    }
+
+    function test_CurrentPnL_CalculatesNegativePnL()
+        external
+        whenActiveStrategiesGreaterThanZero
+        whenAllStrategiesHaveNonZeroAddresses
+        whenStrategiesHavePositiveDebt
+    {
+        // Create more strategies
+        MockStrategyAdapter strategyTwo = _createAndAddAdapter(2000, 100 ether, 1000 ether);
+        MockStrategyAdapter strategyThree = _createAndAddAdapter(3000, 100 ether, 1000 ether);
+        vm.prank(users.manager); strategyTwo.requestCredit();
+        vm.prank(users.manager); strategyThree.requestCredit();
+
+        // Earn on two
+        strategy.earn(100 ether);
+        strategyTwo.lose(100 ether);
+        strategyThree.lose(100 ether);
+
+        (uint256 totalProfit, uint256 totalLoss) = multistrategy.currentPnL();
+        uint256 expectedProfit1 = 100 ether * (MAX_BPS - PERFORMANCE_FEE) / MAX_BPS;
+        uint256 expectedLoss2 = 100 ether;
+        uint256 expectedLoss3 = 100 ether;
+        uint256 expectedTotalLoss = expectedLoss2 + expectedLoss3 - expectedProfit1;
+        assertEq(totalProfit, 0, "Total profit should be 0");
+        assertEq(totalLoss, expectedTotalLoss, "Total loss should be the sum of gains and losses");
     }
 }

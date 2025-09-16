@@ -17,10 +17,8 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
     uint256 repayAmount;
 
     function test_RevertWhen_ContractIsPaused() external {
-        // Pause the multistrategy
         vm.prank(users.guardian); multistrategy.pause();
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         multistrategy.requestCredit();
     }
@@ -33,7 +31,6 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         external
         whenContractNotPaused    
     {   
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.StrategyNotActive.selector, users.manager));
         vm.prank(users.manager); multistrategy.requestCredit();
     }
@@ -53,7 +50,6 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         gainAmount = 100 ether;
         loseAmount = 100 ether;
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.GainLossMismatch.selector));
         vm.prank(address(strategy)); multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
     }
@@ -72,15 +68,12 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         gainAmount = 100 ether;
         loseAmount = 0;
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InsufficientBalance.selector, 0, repayAmount + gainAmount));
         vm.prank(address(strategy)); multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
     }
 
-    modifier whenStrategyHasBalanceToRepay(uint256 _amount) {
+    modifier whenStrategyHasBalanceToRepay() {
         vm.prank(users.manager); strategy.requestCredit();
-
-        strategy.withdrawFromStaking(_amount);
         _;
     }
 
@@ -101,7 +94,7 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenContractNotPaused
         whenCallerActiveStrategy
         whenStrategyOnlyReportsGainOrLoss
-        whenStrategyHasBalanceToRepay(100 ether)
+        whenStrategyHasBalanceToRepay()
         whenStrategyHasMadeALoss(100 ether)
         whenStrategyHasExceedingDebt
     {   
@@ -113,21 +106,16 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         emit IMultistrategy.StrategyReported(address(strategy), repayAmount, gainAmount, loseAmount);
 
         // Report with [100, 0, 100]
-        vm.prank(address(strategy)); multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
+        vm.prank(users.manager); strategy.sendReport(repayAmount);
 
         // Assert that the loss has been reported
         uint256 actualMultistrategyTotalAssets = multistrategy.totalAssets();
-        uint256 expectedMultistrategyTotalAssets = (deposit) - loseAmount;
+        uint256 expectedMultistrategyTotalAssets = deposit - loseAmount;
         assertEq(actualMultistrategyTotalAssets, expectedMultistrategyTotalAssets, "strategyReport multistrategy totalAssets");
-
-        // Assert that the strategy paid the debt with the balance it made available
-        uint256 actualMultistrategyBalance = dai.balanceOf(address(multistrategy));
-        uint256 expectedMultistrategyBalance = (500 ether) + repayAmount;
-        assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "strategyReport multistrategy balance");
 
         // Assert that the strategy total assets have been reduced by the repayment and lose amount
         uint256 actualStrategyTotalAssets = strategy.totalAssets();
-        uint256 expectedStrategyTotalAssets = (500 ether) - repayAmount - loseAmount;
+        uint256 expectedStrategyTotalAssets = 500 ether - repayAmount - loseAmount;
         assertEq(actualStrategyTotalAssets, expectedStrategyTotalAssets, "strategyReport strategy totalAssets");
 
         // Assert that locked profit is zero
@@ -144,6 +132,11 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         uint256 actualStrategyLastReport = multistrategy.getStrategyParameters(address(strategy)).lastReport;
         uint256 expectedStrategyLastReport = block.timestamp;
         assertEq(actualStrategyLastReport, expectedStrategyLastReport, "strategyReport strategy lastReport");
+
+        // Assert that the strategy paid the debt with the balance it made available
+        uint256 actualMultistrategyBalance = dai.balanceOf(address(multistrategy));
+        uint256 expectedMultistrategyBalance = 500 ether + repayAmount;
+        assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "strategyReport multistrategy balance");
     }
 
     function test_StrategyReport_LossHigherThanLockedProfit_NoExceedingDebt()
@@ -151,7 +144,7 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenContractNotPaused
         whenCallerActiveStrategy
         whenStrategyOnlyReportsGainOrLoss
-        whenStrategyHasBalanceToRepay(0)
+        whenStrategyHasBalanceToRepay()
         whenStrategyHasMadeALoss(100  ether)
     {
         repayAmount = 0;
@@ -162,7 +155,7 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         emit IMultistrategy.StrategyReported(address(strategy), repayAmount, gainAmount, loseAmount);
 
         // Report with [0, 0, 100]
-        vm.prank(address(strategy)); multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
+        vm.prank(users.manager); strategy.sendReport(repayAmount);
 
         // Assert that the loss has been reported
         uint256 actualMultistrategyTotalAssets = multistrategy.totalAssets();
@@ -171,12 +164,12 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         // Assert that the strategy didn't pay any debt
         uint256 actualMultistrategyBalance = dai.balanceOf(address(multistrategy));
-        uint256 expectedMultistrategyBalance = 500  ether;
+        uint256 expectedMultistrategyBalance = 500 ether;
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "strategyReport multistrategy balance");
 
         // Assert that the strategy total assets have been reduced by the lose amount
         uint256 actualStrategyTotalAssets = strategy.totalAssets();
-        uint256 expectedStrategyTotalAssets = (500  ether) - loseAmount;
+        uint256 expectedStrategyTotalAssets = 500 ether - loseAmount;
         assertEq(actualStrategyTotalAssets, expectedStrategyTotalAssets, "strategyReport strategy totalAssets");
 
         // Assert that locked profit is zero
@@ -207,21 +200,21 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenContractNotPaused
         whenCallerActiveStrategy
         whenStrategyOnlyReportsGainOrLoss
-        whenStrategyHasBalanceToRepay(100  ether)
+        whenStrategyHasBalanceToRepay()
         whenStrategyHasMadeALoss(10  ether)
         whenThereIsLockedProfit(100  ether)
         whenStrategyHasExceedingDebt
     {   
-        repayAmount = 100  ether;
+        repayAmount = 100 ether;
         gainAmount = 0;
-        loseAmount = 10  ether;
+        loseAmount = 10 ether;
         uint256 profit = 90 ether;
 
         vm.expectEmit({emitter: address(multistrategy)});
         emit IMultistrategy.StrategyReported(address(strategy), repayAmount, gainAmount, loseAmount);
 
         // Report with [100, 0, 10]
-        vm.prank(address(strategy)); multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
+        vm.prank(users.manager); strategy.sendReport(repayAmount);
 
         // Assert that the loss has been reported
         uint256 actualMultistrategyTotalAssets = multistrategy.totalAssets();
@@ -230,12 +223,12 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         // Assert that the strategy paid the debt with the balance it made available
         uint256 actualMultistrategyBalance = dai.balanceOf(address(multistrategy));
-        uint256 expectedMultistrategyBalance = (500 ether) + profit + repayAmount;
+        uint256 expectedMultistrategyBalance = 500 ether + profit + repayAmount;
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "strategyReport multistrategy balance");
 
         // Assert that the strategy total assets have been reduced by the repayment and lose amount
         uint256 actualStrategyTotalAssets = strategy.totalAssets();
-        uint256 expectedStrategyTotalAssets = (500 ether) - repayAmount - loseAmount;
+        uint256 expectedStrategyTotalAssets = 500 ether - repayAmount - loseAmount;
         assertEq(actualStrategyTotalAssets, expectedStrategyTotalAssets, "strategyReport strategy totalAssets");
 
         // Assert that locked profit is the profit minus the loss
@@ -259,7 +252,7 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenContractNotPaused
         whenCallerActiveStrategy
         whenStrategyOnlyReportsGainOrLoss
-        whenStrategyHasBalanceToRepay(0)
+        whenStrategyHasBalanceToRepay()
         whenStrategyHasMadeALoss(10 ether)
         whenThereIsLockedProfit(100 ether)
     {
@@ -272,7 +265,7 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         emit IMultistrategy.StrategyReported(address(strategy), repayAmount, gainAmount, loseAmount);
 
         // Report with [100, 0, 10]
-        vm.prank(address(strategy)); multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
+        vm.prank(users.manager); strategy.sendReport(repayAmount);
 
         // Assert that the loss has been reported
         uint256 actualMultistrategyTotalAssets = multistrategy.totalAssets();
@@ -281,12 +274,12 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         // Assert that the strategy paid the debt with the balance it made available
         uint256 actualMultistrategyBalance = dai.balanceOf(address(multistrategy));
-        uint256 expectedMultistrategyBalance = (500 ether) + profit;
+        uint256 expectedMultistrategyBalance = 500 ether + profit;
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "strategyReport multistrategy balance");
 
         // Assert that the strategy total assets have been reduced by the repayment and lose amount
         uint256 actualStrategyTotalAssets = strategy.totalAssets();
-        uint256 expectedStrategyTotalAssets = (500 ether) - loseAmount;
+        uint256 expectedStrategyTotalAssets = 500 ether - loseAmount;
         assertEq(actualStrategyTotalAssets, expectedStrategyTotalAssets, "strategyReport strategy totalAssets");
 
         // Assert that locked profit is the profit minus the loss
@@ -316,7 +309,7 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenContractNotPaused
         whenCallerActiveStrategy
         whenStrategyOnlyReportsGainOrLoss
-        whenStrategyHasBalanceToRepay(100 ether)
+        whenStrategyHasBalanceToRepay()
         whenStrategyHasMadeAGain(100 ether)
         whenStrategyHasExceedingDebt
     {
@@ -325,10 +318,10 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         uint256 fee = Math.mulDiv(gainAmount, multistrategy.performanceFee(), 10_000);
 
         vm.expectEmit({emitter: address(multistrategy)});
-        emit IMultistrategy.StrategyReported(address(strategy), repayAmount, gainAmount - fee, loseAmount);
+        emit IMultistrategy.StrategyReported(address(strategy), repayAmount, gainAmount, loseAmount);
 
         // Report with [100, 100, 0]
-        vm.prank(address(strategy)); multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
+        vm.prank(users.manager); strategy.sendReport(repayAmount);
 
         uint256 actualFeeRecipientBalance = dai.balanceOf(multistrategy.protocolFeeRecipient());
         uint256 expectedFeeRecipientBalance = fee;
@@ -370,7 +363,7 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenContractNotPaused
         whenCallerActiveStrategy
         whenStrategyOnlyReportsGainOrLoss
-        whenStrategyHasBalanceToRepay(0)
+        whenStrategyHasBalanceToRepay()
         whenStrategyHasMadeAGain(100 ether)
     {
         repayAmount = 0;
@@ -378,10 +371,10 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         uint256 fee = Math.mulDiv(gainAmount, multistrategy.performanceFee(), 10_000);
 
         vm.expectEmit({emitter: address(multistrategy)});
-        emit IMultistrategy.StrategyReported(address(strategy), repayAmount, gainAmount - fee, loseAmount);
+        emit IMultistrategy.StrategyReported(address(strategy), repayAmount, gainAmount, loseAmount);
 
         // Report with [100, 100, 0]
-        vm.prank(address(strategy)); multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
+        vm.prank(users.manager); strategy.sendReport(repayAmount);
 
         uint256 actualFeeRecipientBalance = dai.balanceOf(multistrategy.protocolFeeRecipient());
         uint256 expectedFeeRecipientBalance = fee;

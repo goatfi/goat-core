@@ -31,12 +31,20 @@ contract MultistrategyHarness is Multistrategy {
         return _freeFunds();
     }
 
-    function reportLoss(address _strategy, uint256 _loss) external {
-        _reportLoss(_strategy, _loss);
+    function settleLoss(address _strategy, uint256 _loss) external {
+        _settleLoss(_strategy, _loss);
     }
 
     function profitUnlockTime() external pure returns (uint256) {
         return PROFIT_UNLOCK_TIME;
+    }
+
+    function enter(address _caller, address _receiver, uint256 _assets, uint256 _shares) external {
+        _enter(_caller, _receiver, _assets, _shares);
+    }
+
+    function exit(address _caller, address _receiver, address _owner, uint256 _assets, uint256 _shares, bool _consumeAllShares) external {
+        _exit(_caller, _receiver, _owner, _assets, _shares, _consumeAllShares);
     }
 
     /// @dev Needed for the Test Coverage to ignore it.

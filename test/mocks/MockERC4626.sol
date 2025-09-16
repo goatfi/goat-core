@@ -2,10 +2,14 @@
 pragma solidity ^0.8.4;
 
 import { ERC4626 } from "solady/tokens/ERC4626.sol";
+import { SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
+import { IMockERC20 } from "./MockERC20.sol";
 
 /// @dev WARNING! This mock is strictly intended for testing purposes only.
 /// Do NOT copy anything here into production code unless you really know what you are doing.
 contract MockERC4626 is ERC4626 {
+
     bool public immutable useVirtualShares;
     uint8 public immutable decimalsOffset;
 
@@ -17,6 +21,8 @@ contract MockERC4626 is ERC4626 {
 
     uint256 public beforeWithdrawHookCalledCounter;
     uint256 public afterDepositHookCalledCounter;
+
+    uint256 public borrowed;
 
     constructor(
         address underlying_,
@@ -35,6 +41,22 @@ contract MockERC4626 is ERC4626 {
 
         useVirtualShares = useVirtualShares_;
         decimalsOffset = decimalsOffset_;
+    }
+
+    function borrow(uint256 _amount) external {
+        require(_amount <= IERC20(asset()).balanceOf(address(this)), "Amount too high");
+        IMockERC20(asset()).burn(address(this), _amount);
+        borrowed += _amount;
+    }
+
+    function repay(uint256 _amount) external {
+        require(_amount <= borrowed, "Amount too high");
+        IMockERC20(asset()).mint(address(this), _amount);
+        borrowed -= _amount;
+    }
+
+    function totalAssets() public view override returns (uint256 assets) {
+        assets = IERC20(asset()).balanceOf(address(this)) + borrowed;
     }
 
     function asset() public view virtual override returns (address) {

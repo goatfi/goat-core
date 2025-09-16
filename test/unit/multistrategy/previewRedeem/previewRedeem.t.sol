@@ -10,6 +10,7 @@ contract PreviewRedeem_Integration_Concrete_Test is Multistrategy_Base_Test {
 
     MockStrategyAdapter strategy;
     uint256 amount = 1000 ether;
+    uint256 slippage = 1000;
 
     function test_PreviewRedeem_ZeroShares() external view {
         uint256 actualAssets = multistrategy.previewRedeem(0);
@@ -48,7 +49,23 @@ contract PreviewRedeem_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     modifier whenSlippageLimitNotZero() {
-        vm.prank(users.manager); multistrategy.setSlippageLimit(100);
+        _;
+    }
+
+    function test_PreivewRedeem_MaxBps()
+        external
+        whenSharesNotZero
+        whenNotEnoughLiquidity
+        whenSlippageLimitNotZero
+    {
+        vm.prank(users.manager); multistrategy.setSlippageLimit(10_000);
+        uint256 actualAssets = multistrategy.previewRedeem(amount);
+        uint256 expectedAssets = 0;
+        assertEq(actualAssets, expectedAssets, "preview redeem");
+    }
+
+    modifier whenSlippageLimitNotMaxBps() {
+        vm.prank(users.manager); multistrategy.setSlippageLimit(slippage);
         _;
     }
 
@@ -57,9 +74,10 @@ contract PreviewRedeem_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenSharesNotZero
         whenNotEnoughLiquidity
         whenSlippageLimitNotZero
+        whenSlippageLimitNotMaxBps
     {
         uint256 actualAssets = multistrategy.previewRedeem(amount);
-        uint256 expectedAssets = multistrategy.convertToAssets(amount.mulDiv(9_900, 10_000));
+        uint256 expectedAssets = multistrategy.convertToAssets(amount.mulDiv(10_000 - slippage, 10_000));
         assertEq(actualAssets, expectedAssets, "preview redeem");
     }
 }

@@ -2,15 +2,9 @@ _currentPnL
 ├── when activeStrategies is 0
 │   └── it should return (0, 0)
 └── when activeStrategies is greater than 0
-    ├── when the loop encounters a strategy address of zero
-    │   └── it should break the loop and return current totals
-    └── when all strategy addresses in withdrawOrder are non-zero
         ├── when a strategy has totalDebt of 0
         │   └── it should continue to the next strategy
         └── when a strategy has totalDebt greater than 0
-            ├── when IStrategyAdapter(strategy).currentPnL() reverts
-            │   └── it should revert
-            └── when IStrategyAdapter(strategy).currentPnL() succeeds
-                ├── it should calculate profit as gain * (MAX_BPS - performanceFee) / MAX_BPS
-                ├── it should add the calculated profit to totalProfit
-                └── it should add loss to totalLoss
+            ├── it should calculate profit as gain * (MAX_BPS - performanceFee) / MAX_BPS
+            ├── it should add the calculated profit to totalProfit
+            └── it should add loss to totalLoss

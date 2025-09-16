@@ -8,6 +8,8 @@ creditAvailble.t.sol
         ├── when the strategy asking for a credit is not active
         │   └── it should return 0
         └── when the strategy asking for a credit is active
+            ├── when the multistrategy total debt is at or above the debt limit
+            │   └── it should return 0
             ├── when the strategy has more debt than allowed
             │   └── it should return 0
             ├── when the strategy has same debt as allowed

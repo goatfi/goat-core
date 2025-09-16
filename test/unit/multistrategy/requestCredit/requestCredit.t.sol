@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
+import { IMultistrategy } from "interfaces/IMultistrategy.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 import { Errors } from "src/libraries/Errors.sol";
@@ -10,10 +11,8 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
     MockStrategyAdapter strategy;
 
     function test_RevertWhen_ContractIsPaused() external {
-        // Pause the multistrategy
         vm.prank(users.guardian); multistrategy.pause();
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         multistrategy.requestCredit();
     }
@@ -26,14 +25,12 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
         external
         whenContractNotPaused    
     {   
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Errors.StrategyNotActive.selector, users.manager));
         vm.prank(users.manager); multistrategy.requestCredit();
     }
 
     modifier whenCallerActiveStrategy() {
-        strategy = _createAndAddAdapter(5_000, 0 , type(uint256).max);
-
+        strategy = _createAndAddAdapter(0, 0 , type(uint256).max);
         _userDeposit(users.bob, 1_000 ether);
         _;
     }
@@ -43,8 +40,6 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenContractNotPaused
         whenCallerActiveStrategy
     {   
-        //Set the debtRatio to 0 so there isn't any credit available
-        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 0);
         vm.prank(address(strategy)); uint256 actualCredit = multistrategy.requestCredit();
 
         uint256 expectedCredit = 0;
@@ -69,10 +64,19 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenCallerActiveStrategy
         whenCreditAvailable
     {
+        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 5_000);
+
+        vm.expectEmit({emitter: address(multistrategy)});
+        emit IMultistrategy.CreditRequested(address(strategy), 500 ether);
         vm.prank(address(strategy)); uint256 actualCredit = multistrategy.requestCredit();
 
-        uint256 expectedCredit = 500 ether;
-        assertEq(actualCredit, expectedCredit, "requestCredit, credit");
+        uint256 actualMultistrategyTotalDebt = multistrategy.totalDebt();
+        uint256 expectedMultistrategyTotalDebt = 500 ether;
+        assertEq(actualMultistrategyTotalDebt, expectedMultistrategyTotalDebt, "requestCredit, multistrategy totalDebt");
+
+        uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
+        uint256 expectedStrategyDebt = 500 ether;
+        assertEq(actualStrategyDebt, expectedStrategyDebt, "requestCredit, strategy debt");
 
         uint256 actualMultistrategyBalance = dai.balanceOf(address(multistrategy));
         uint256 expectedMultistrategyBalance = 500 ether;
@@ -81,5 +85,8 @@ contract RequestCredit_Integration_Concrete_Test is Multistrategy_Base_Test {
         uint256 actualStrategyBalance = dai.balanceOf(address(strategy));
         uint256 expectedStrategyBalance = 500 ether;
         assertEq(actualStrategyBalance, expectedStrategyBalance, "requestCredit, strategy balance");
+
+        uint256 expectedCredit = 500 ether;
+        assertEq(actualCredit, expectedCredit, "requestCredit, credit");
     }
 }

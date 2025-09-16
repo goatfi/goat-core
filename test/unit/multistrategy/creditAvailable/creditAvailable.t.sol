@@ -66,6 +66,30 @@ contract CreditAvailable_Integration_Concrete_Test is Multistrategy_Base_Test {
         uint256 expectedCreditAvailable = 0;
         assertEq(actualCreditAvailable, expectedCreditAvailable, "creditAvailable");
     }    
+
+    function test_CreditAvailable_MultistrategyAboveDebtLimit()
+        external
+        whenNotZeroAddress
+        whenThereAreDeposits
+        whenActiveStrategy
+    {
+        // Create a second strategy and request credit.
+        MockStrategyAdapter strategyTwo = _createAndAddAdapter(5_000, minDebtDelta, maxDebtDelta);
+
+        vm.prank(users.manager); strategy.requestCredit();
+        vm.prank(users.manager); strategyTwo.requestCredit();
+
+        // Now, both strategies have 5_000 debt and the multistrategy has 10_000 debt.
+        // When increasing the debt ratio of strategy(One) we make sTotalDebt < sDebtLimit
+        // While keeping mTotalDebt = mDebtLimit
+        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategyTwo), 4_000);
+        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 6_000);
+
+        // As the strategy has more debt than its limit, there is no credit available
+        uint256 actualCreditAvailable = multistrategy.creditAvailable(address(strategy));
+        uint256 expectedCreditAvailable = 0;
+        assertEq(actualCreditAvailable, expectedCreditAvailable, "creditAvailable");
+    }
        
     function test_CreditAvailable_DebtEqualAsDebtLimit()
         external

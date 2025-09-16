@@ -11,4 +11,5 @@ requestCredit.t.sol
             ├── it should increase the totalDebt of the strategy
             ├── it should increase the totalDebt of the multistrategy
             ├── it should transfer the tokens to the strategy
-            └── it should emit a CreditRequested event
+            ├── it should emit a CreditRequested event
+            └── it should return the credit amount

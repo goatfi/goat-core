@@ -1,0 +1,14 @@
+calculateLockedProfit.t.sol
+├── when the multistrategy has no funds
+│   └── it should return 0
+└── when the multistrategy has funds
+    ├── when there is no locked profit
+    │   ├── when it gets a profit
+    │   │   └── it should return the profit amount
+    │   └── when it gets a loss
+    │       └── it should return 0
+    └── when there is locked profit
+        ├── when gets a new profit
+        │   └── it should return previous locked profit + new profit, degraded over time
+        └── when gets a loss
+            └── it should return previous locm

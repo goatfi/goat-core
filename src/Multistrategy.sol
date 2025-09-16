@@ -161,7 +161,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         require(_assets <= maxAssets, ERC4626ExceededMaxDeposit(_receiver, _assets, maxAssets));
 
         uint256 shares = previewDeposit(_assets);
-        _deposit(msg.sender, _receiver, _assets, shares);
+        _enter(msg.sender, _receiver, _assets, shares);
 
         return shares;
     }
@@ -172,7 +172,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         require(_shares <= maxShares, ERC4626ExceededMaxMint(_receiver, _shares, maxShares));
 
         uint256 assets = previewMint(_shares);
-        _deposit(msg.sender, _receiver, assets, _shares);
+        _enter(msg.sender, _receiver, assets, _shares);
 
         return assets;
     }
@@ -183,7 +183,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         require(_assets <= maxAssets, ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets));
 
         uint256 maxShares = previewWithdraw(_assets);
-        (, uint256 shares) = _withdraw(msg.sender, _receiver, _owner, _assets, maxShares, false);
+        (, uint256 shares) = _exit(msg.sender, _receiver, _owner, _assets, maxShares, false);
 
         require(shares <= maxShares, Errors.SlippageCheckFailed(maxShares, shares));
 
@@ -196,7 +196,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         require(_shares <= maxShares, ERC4626ExceededMaxRedeem(_owner, _shares, maxShares));
 
         uint256 minAssets = previewRedeem(_shares);
-        (uint256 assets, ) = _withdraw(msg.sender, _receiver, _owner, minAssets, _shares, true);
+        (uint256 assets, ) = _exit(msg.sender, _receiver, _owner, minAssets, _shares, true);
 
         require(assets >= minAssets, Errors.SlippageCheckFailed(minAssets, assets));
 
@@ -297,27 +297,26 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @notice Calculate the current locked profit.
-    /// @return The calculated current locked profit.
-    function _calculateLockedProfit() internal view returns (uint256) {
+    /// @dev Locked profit degrades linearly over 3 days from the initial amount to zero.
+    /// Calculated as: initialLockedProfit * (1 - timeElapsed / 3 days), where timeElapsed
+    /// is the time since last report. Returns 0 after 3 days.
+    /// @return newLockedProfit The calculated current locked profit.
+    function _calculateLockedProfit() internal view returns (uint256 newLockedProfit) {
+        // 3 days in seconds * LOCKED_PROFIT_DEGRADATION = DEGRADATION_COEFFICIENT
         uint256 lockedFundsRatio = (block.timestamp - lastReport) * LOCKED_PROFIT_DEGRADATION;
-
         if(lockedFundsRatio < DEGRADATION_COEFFICIENT) {
-            return lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, DEGRADATION_COEFFICIENT);
+            newLockedProfit = lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, DEGRADATION_COEFFICIENT);
         }
-        return 0;
     }
 
     /// @notice Calculates the current profit and loss (PnL) across all active strategies.
     /// @return totalProfit The total profit across all active strategies, after deducting the performance fee.
     /// @return totalLoss The total loss across all active strategies.
-    function _currentPnL() internal view returns (uint256, uint256) {
+    function _currentPnL() internal view returns (uint256 totalProfit, uint256 totalLoss) {
         if (activeStrategies == 0) return (0, 0);
-        uint256 totalProfit = 0;
-        uint256 totalLoss = 0;
 
         for(uint8 i = 0; i < activeStrategies; ++i){
             address strategy = withdrawOrder[i];
-            if(strategy == address(0)) break;
             if(strategies[strategy].totalDebt == 0) continue;
 
             (uint256 gain, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
@@ -325,9 +324,21 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             totalLoss += loss;
         }
 
-        return (totalProfit, totalLoss);
+        if (totalProfit > 0 && totalLoss > 0) {
+            if(totalProfit >= totalLoss) {
+                totalProfit -= totalLoss;
+                totalLoss = 0;
+            } else {
+                totalLoss -= totalProfit;
+                totalProfit = 0;
+            }
+        }
     }
 
+    /// @notice Calculates the liquidity available to fulfill withdraws
+    /// @dev When an adapter doesn't have enough liquidity. All the liquidity in subsequent adapters
+    /// will not be able reachable, due to how the withdraw process works.
+    /// @return liquidity The amount of liquidity that is available
     function _availableLiquidity() internal view returns (uint256 liquidity) {
         liquidity = _balance();
         for(uint256 i = 0; i < activeStrategies; ++i) {
@@ -335,8 +346,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             uint256 strategyAvailableLiquidity = IStrategyAdapter(withdrawOrder[i]).availableLiquidity();
             liquidity += Math.min(strategyTotalAssets, strategyAvailableLiquidity);
 
-            // Return early because if a strategy has more assets than liquidity,
-            // The liquidity in the following strategies cannot be reached.
             if(strategyTotalAssets > strategyAvailableLiquidity) break;
         }
     }
@@ -354,7 +363,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @param _receiver The address of the recipient to receive the shares.
     /// @param _assets The amount of assets being deposited.
     /// @param _shares The number of shares to be minted for the receiver.
-    function _deposit(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal override {
+    function _enter(address _caller, address _receiver, uint256 _assets, uint256 _shares) internal {
         require(_receiver != address(0) && _receiver != address(this), Errors.InvalidAddress(_receiver));
         require(_assets > 0, Errors.ZeroAmount(_assets));
 
@@ -372,7 +381,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @param _shares The amount of shares to burn.
     /// @param _consumeAllShares True if all `_shares` should be used to withdraw. False if it should withdraw just `_assets`.
     /// @return The number of assets withdrawn and the shares burned as a result of the withdrawal.
-    function _withdraw(
+    function _exit(
         address _caller,
         address _receiver,
         address _owner,
@@ -423,8 +432,9 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
 
     /// @notice Requests credit for an active strategy.
     /// @dev This function should be called only by active strategies when they need to request credit.
-    function _requestCredit() internal returns (uint256){
-        uint256 credit = _creditAvailable(msg.sender);
+    /// @return credit The amount of credit requested by msg.sender
+    function _requestCredit() internal returns (uint256 credit){
+        credit = _creditAvailable(msg.sender);
 
         if(credit > 0) {
             strategies[msg.sender].totalDebt += credit;
@@ -432,8 +442,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             IERC20(asset()).safeTransfer(msg.sender, credit);
             emit CreditRequested(msg.sender, credit);
         }
-        
-        return credit;
     }
 
     /// @notice Reports the performance of a strategy.
@@ -445,9 +453,9 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         require(!(_gain > 0 && _loss > 0), Errors.GainLossMismatch());
         require(strategyBalance >= _debtRepayment + _gain, Errors.InsufficientBalance(strategyBalance, _debtRepayment + _gain));
 
-        uint256 profit = 0;
-        uint256 feesCollected = 0;
-        if(_loss > 0) _reportLoss(msg.sender, _loss);
+        uint256 profit;
+        uint256 feesCollected;
+        if(_loss > 0) _settleLoss(msg.sender, _loss);
         if(_gain > 0) {
             strategies[msg.sender].totalGain += _gain;
             feesCollected = _gain.mulDiv(performanceFee, MAX_BPS);
@@ -461,11 +469,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         }
         
         uint256 newLockedProfit = _calculateLockedProfit() + profit;
-        if(newLockedProfit > _loss) {
-            lockedProfit = newLockedProfit - _loss;
-        } else {
-            lockedProfit = 0;
-        }
+        lockedProfit = newLockedProfit > _loss ? newLockedProfit - _loss : 0;
 
         strategies[msg.sender].lastReport = block.timestamp;
         lastReport = block.timestamp;
@@ -473,14 +477,14 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(debtToRepay + _gain > 0) IERC20(asset()).safeTransferFrom(msg.sender, address(this), debtToRepay + _gain);
         if(feesCollected > 0) IERC20(asset()).safeTransfer(protocolFeeRecipient, feesCollected);
 
-        emit StrategyReported(msg.sender, debtToRepay, profit, _loss);
+        emit StrategyReported(msg.sender, debtToRepay, _gain, _loss);
     }
 
-    /// @notice Reports a loss for a strategy.
+    /// @notice Settles a loss for a strategy.
     /// @param _strategy The address of the strategy reporting the loss.
     /// @param _loss The amount of loss reported by the strategy.
-    function _reportLoss(address _strategy, uint256 _loss) internal {
-        require(_loss <= strategies[_strategy].totalDebt, Errors.InvalidStrategyLoss());
+    function _settleLoss(address _strategy, uint256 _loss) internal {
+        require(_loss > 0 && _loss <= strategies[_strategy].totalDebt, Errors.InvalidStrategyLoss());
 
         strategies[_strategy].totalLoss += _loss;
         strategies[_strategy].totalDebt -= _loss;

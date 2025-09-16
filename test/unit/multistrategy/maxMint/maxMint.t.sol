@@ -5,8 +5,6 @@ import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.so
 
 contract MaxMint_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_MaxMint_DepositLimitZero() external {
-        _userDeposit(users.bob, 1000 ether);
-
         vm.prank(users.manager); multistrategy.setDepositLimit(0);
 
         uint256 actualMaxMint = multistrategy.maxMint(users.bob);

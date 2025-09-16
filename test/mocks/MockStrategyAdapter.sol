@@ -91,7 +91,7 @@ contract MockStrategyAdapter is StrategyAdapterHarness {
     }
 
     function _availableLiquidity() internal override view returns(uint256) {
-        return vault.totalAssets();
+        return IERC20(asset).balanceOf(address(vault));
     }
 
     /// @dev Needed for the Test Coverage to ignore it.

@@ -63,4 +63,19 @@ contract TotalAssets_Integration_Concrete_Test is Multistrategy_Base_Test {
         uint256 expectedTotalAssets = 1_000 ether;
         assertEq(actualTotalAssets, expectedTotalAssets, "totalAssets");
     }
+
+    function test_TotalAssets_MultipleStrategies()
+        external
+        whenThereAreDeposits
+        whenActiveStrategy
+        whenCreditRequested
+    {
+        MockStrategyAdapter strategyTwo = _createAndAddAdapter(5_000, 0, type(uint256).max);
+        vm.prank(users.manager); strategyTwo.requestCredit();
+        
+        // Assert that totalAssets are as expected
+        uint256 actualTotalAssets = multistrategy.totalAssets();
+        uint256 expectedTotalAssets = 1_000 ether;
+        assertEq(actualTotalAssets, expectedTotalAssets, "totalAssets");
+    }
 }

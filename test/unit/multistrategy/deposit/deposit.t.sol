@@ -8,25 +8,19 @@ import { ERC4626 } from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import { IERC4626 } from "@openzeppelin/interfaces/IERC4626.sol";
 
 contract Deposit_Integration_Concrete_Test is Multistrategy_Base_Test {
-    uint256 amount;
+    uint256 assets;
     address recipient;
 
     function test_RevertWhen_ContractIsPaused() external {
         recipient = users.bob;
 
-        // Pause the multistrategy
         vm.prank(users.guardian); multistrategy.pause();
 
-        // Expect a revert
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        multistrategy.deposit(amount, recipient);
+        multistrategy.deposit(assets, recipient);
     }
 
     modifier whenContractNotPaused() {
-        _;
-    }
-
-    modifier whenNotRetired() {
         _;
     }
 
@@ -34,120 +28,37 @@ contract Deposit_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_AssetsAboveMaxDeposit()
         external
         whenContractNotPaused
-        whenNotRetired
     {
-        amount = 200_000 ether;
+        assets = 200_000 ether;
 
-        // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(ERC4626.ERC4626ExceededMaxDeposit.selector, recipient, amount, 100_000 ether));
-        multistrategy.deposit(amount, recipient);
+        vm.expectRevert(abi.encodeWithSelector(ERC4626.ERC4626ExceededMaxDeposit.selector, recipient, assets, 100_000 ether));
+        multistrategy.deposit(assets, recipient);
     }
 
     modifier whenDepositLimitRespected() {
-        amount = 1000 ether;
+        assets = 1000 ether;
         _;
-    }
-
-    function test_RevertWhen_RecipientIsZeroAddress() 
-        external
-        whenContractNotPaused
-        whenNotRetired
-        whenDepositLimitRespected 
-    {
-        recipient = address(0);
-
-        // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidAddress.selector, address(0)));
-        multistrategy.deposit(amount, recipient);
-    }
-
-    modifier whenRecipientNotZeroAddress() {
-        recipient = users.bob;
-        _;
-    }
-
-    function test_RevertWhen_RecipientIsContractAddress()
-        external
-        whenContractNotPaused
-        whenNotRetired
-        whenDepositLimitRespected 
-        whenRecipientNotZeroAddress
-    {
-        recipient = address(multistrategy);
-
-        // Expect a revert
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.InvalidAddress.selector,
-                address(multistrategy)
-            )
-        );
-        multistrategy.deposit(amount, recipient);
-    }
-
-    modifier whenRecipientNotContractAddress() {
-        _;
-    }
-
-    function test_RevertWhen_AmountIsZero()
-        external
-        whenContractNotPaused
-        whenNotRetired
-        whenDepositLimitRespected
-        whenRecipientNotZeroAddress
-        whenRecipientNotContractAddress
-    {
-        amount = 0;
-        recipient = users.bob;
-
-        // Expect a revert
-        vm.expectRevert(abi.encodeWithSelector(Errors.ZeroAmount.selector, 0));
-        multistrategy.deposit(amount, recipient);
-    }
-
-    modifier whenAmountIsGreaterThanZero {
-        _;
-    }
-
-    function test_RevertWhen_CallerHasInsufficientBalance()
-        external
-        whenContractNotPaused
-        whenNotRetired
-        whenRecipientNotZeroAddress
-        whenDepositLimitRespected
-        whenRecipientNotContractAddress
-        whenAmountIsGreaterThanZero
-    {
-        recipient = users.bob;
-
-        // Expect a revert
-        vm.expectRevert();
-        multistrategy.deposit(amount, recipient);
     }
 
     modifier whenCallerHasEnoughBalance() {
-        dai.mint(users.bob, amount);
-        vm.prank(users.bob); dai.approve(address(multistrategy), amount);
+        dai.mint(users.bob, assets);
+        vm.prank(users.bob); dai.approve(address(multistrategy), assets);
         _;
     }
 
     function test_Deposit()
         external
         whenContractNotPaused
-        whenNotRetired
-        whenRecipientNotZeroAddress
         whenDepositLimitRespected
-        whenRecipientNotContractAddress
-        whenAmountIsGreaterThanZero
         whenCallerHasEnoughBalance
     {
         recipient = users.bob;
-        uint256 shares = multistrategy.previewDeposit(amount);
+        uint256 shares = multistrategy.previewDeposit(assets);
 
         vm.expectEmit({emitter: address(multistrategy)});
-        emit IERC4626.Deposit(users.bob, recipient, amount, shares);
+        emit IERC4626.Deposit(users.bob, recipient, assets, shares);
 
-        vm.prank(users.bob); multistrategy.deposit(amount, recipient);
+        vm.prank(users.bob); multistrategy.deposit(assets, recipient);
 
         // Assert correct amount of shares have been minted to recipient
         uint256 actualMintedShares = multistrategy.balanceOf(recipient);
@@ -161,7 +72,7 @@ contract Deposit_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         // Assert the assets have been transferred to the multistrategy
         uint256 actualMultistrategyBalance = dai.balanceOf(address(multistrategy));
-        uint256 expectedMultistrategyBalance = amount;
+        uint256 expectedMultistrategyBalance = assets;
         assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "deposit multistrategy balance");
     }
 }

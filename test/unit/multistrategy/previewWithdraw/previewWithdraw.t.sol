@@ -49,7 +49,6 @@ contract PreviewWithdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     modifier whenSlippageLimitNotZero() {
-        vm.prank(users.manager); multistrategy.setSlippageLimit(10_000);
         _;
     }
 
@@ -59,6 +58,8 @@ contract PreviewWithdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenNotEnoughLiquidity
         whenSlippageLimitNotZero
     {
+        vm.prank(users.manager); multistrategy.setSlippageLimit(10_000);
+
         uint256 actualShares = multistrategy.previewWithdraw(amount);
         uint256 expectedShares = type(uint256).max;
         assertEq(actualShares, expectedShares, "preview withdraw");

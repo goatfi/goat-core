@@ -1,0 +1,11 @@
+maxWithdraw.t.sol
+├── when the address is the zero address
+│   └── it should return 0
+└── when the address is not the zero address
+    ├── when the address holds no vault shares
+    │   └── it should return 0
+    └── when the address holds vault shares
+        ├── when the available liquidity is greater than or equal to the balance of shares converted to assets
+        │   └── it should return the balance of shares converted to assets
+        └── when the available liquidity is less than the balance of shares converted to assets
+            └── it should return the available liquidity

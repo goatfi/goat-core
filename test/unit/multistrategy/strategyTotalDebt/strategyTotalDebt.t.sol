@@ -19,23 +19,9 @@ contract StrategyTotalDebt_Integration_Concrete_Test is Multistrategy_Base_Test 
         _;
     }
 
-    function test_StrategyTotalDebt_NoActiveStrategy() external whenNotZeroAddress {
-        vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy), 0);
-
-        // Assert that a not active strategy has 0 debt
-        uint256 actualStrategyTotalDebt = multistrategy.strategyTotalDebt(address(strategy));
-        uint256 expectedStrategyTotalDebt = 0;
-        assertEq(actualStrategyTotalDebt, expectedStrategyTotalDebt, "strategyTotalDebt");
-    }
-
-    modifier whenActiveStrategy() {
-        _;
-    }
-
     function test_StrategyTotalDebt_NoCreditRequested() 
         external 
         whenNotZeroAddress
-        whenActiveStrategy
     {
         // Assert debt is 0 as the strategy hasn't requested any credit
         uint256 actualStrategyTotalDebt = multistrategy.strategyTotalDebt(address(strategy));
@@ -53,7 +39,6 @@ contract StrategyTotalDebt_Integration_Concrete_Test is Multistrategy_Base_Test 
     function test_StrategyTotalDebt_CreditRequested() 
         external
         whenNotZeroAddress
-        whenActiveStrategy
         whenCreditRequested
     {
         // Debt should be half the user deposit, as strategy's debtRatio is 50%

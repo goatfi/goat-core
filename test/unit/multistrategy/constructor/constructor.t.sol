@@ -7,15 +7,13 @@ import { MockERC20 } from "../../../mocks/MockERC20.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
 contract Constructor_Integration_Concrete_Test is Test {
+    MockERC20 asset = new MockERC20("Test Token", "TEST");
+    address manager = makeAddr("manager");
+    address protocolFeeRecipient;
+    string name = "Test Multistrategy";
+    string symbol = "TMULT";
 
     function test_RevertWhen_ProtocolFeeRecipientIsZeroAddress() external {
-        MockERC20 asset = new MockERC20("Test Token", "TEST");
-        address manager = makeAddr("manager");
-        address protocolFeeRecipient = address(0);
-        string memory name = "Test Multistrategy";
-        string memory symbol = "TMULT";
-
-        // Expect revert
         vm.expectRevert(abi.encodeWithSelector(Errors.ZeroAddress.selector));
         new Multistrategy({
             _asset: address(asset),
@@ -26,13 +24,12 @@ contract Constructor_Integration_Concrete_Test is Test {
         });
     }
 
-    function test_Constructor_Success() external {
-        MockERC20 asset = new MockERC20("Test Token", "TEST");
-        address manager = makeAddr("manager");
-        address protocolFeeRecipient = makeAddr("feeRecipient");
-        string memory name = "Test Multistrategy";
-        string memory symbol = "TMULT";
+    modifier whenProtocolFeeRecipientNotZero() {
+        protocolFeeRecipient = makeAddr("feeRecipient");
+        _;
+    }
 
+    function test_Constructor_Success() external whenProtocolFeeRecipientNotZero {
         Multistrategy multistrategy = new Multistrategy({
             _asset: address(asset),
             _manager: manager,
