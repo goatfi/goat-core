@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
-import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
 
 contract CurrentPnL_Integration_Concrete_Test is Multistrategy_Base_Test {
     MockStrategyAdapter strategy;

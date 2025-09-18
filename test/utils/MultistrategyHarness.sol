@@ -43,8 +43,21 @@ contract MultistrategyHarness is Multistrategy {
         _enter(_caller, _receiver, _assets, _shares);
     }
 
-    function exit(address _caller, address _receiver, address _owner, uint256 _assets, uint256 _shares, bool _consumeAllShares) external {
-        _exit(_caller, _receiver, _owner, _assets, _shares, _consumeAllShares);
+    function exit(address _caller, address _receiver, address _owner, uint256 _assets, uint256 _shares) external {
+        _exit(_caller, _receiver, _owner, _assets, _shares);
+    }
+
+    function settleUnrealizedLosses() external {
+        _settleUnrealizedLosses();
+    }
+
+    function checkSlippage(
+        uint256 _expectedAssets,
+        uint256 _actualAssets,
+        uint256 _expectedShares,
+        uint256 _actualShares
+    ) external view {
+        _checkSlippage(_expectedAssets, _actualAssets, _expectedShares, _actualShares);
     }
 
     /// @dev Needed for the Test Coverage to ignore it.

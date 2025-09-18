@@ -103,29 +103,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         return Math.min(balanceOf(_owner), maxShares);
     }
 
-    /// @inheritdoc IERC4626
-    function previewWithdraw(uint256 _assets) public view override returns (uint256) {
-        uint256 shares = _convertToShares(_assets, Math.Rounding.Ceil);
-        if(_assets <= _balance()) {
-            return shares;
-        } else {
-            if(slippageLimit == MAX_BPS) return type(uint256).max;
-            // Return the number of shares required at the current rate, accounting for slippage.
-            return shares.mulDiv(MAX_BPS, MAX_BPS - slippageLimit, Math.Rounding.Ceil);
-        }
-    }
-
-    /// @inheritdoc IERC4626
-    function previewRedeem(uint256 _shares) public view override returns (uint256) {
-        uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
-        if(assets <= _balance()) {
-            return assets;
-        } else {
-            // Return the number of assets redeemable at the maximum permitted slippage.
-            return assets.mulDiv(MAX_BPS - slippageLimit, MAX_BPS, Math.Rounding.Floor);
-        }
-    }
-
     /// @inheritdoc IMultistrategy
     function creditAvailable(address _strategy) external view returns (uint256) {
         return _creditAvailable(_strategy);
@@ -182,10 +159,12 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 maxAssets = maxWithdraw(_owner);
         require(_assets <= maxAssets, ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets));
 
-        uint256 maxShares = previewWithdraw(_assets);
-        (, uint256 shares) = _exit(msg.sender, _receiver, _owner, _assets, maxShares, false);
+        uint256 desiredShares = previewWithdraw(_assets);
+        _settleUnrealizedLosses();
+        uint256 shares = previewWithdraw(_assets);
 
-        require(shares <= maxShares, Errors.SlippageCheckFailed(maxShares, shares));
+        _checkSlippage(_assets, _assets, desiredShares, shares);
+        _exit(msg.sender, _receiver, _owner, _assets, shares);
 
         return shares;
     }
@@ -195,10 +174,12 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 maxShares = maxRedeem(_owner);
         require(_shares <= maxShares, ERC4626ExceededMaxRedeem(_owner, _shares, maxShares));
 
-        uint256 minAssets = previewRedeem(_shares);
-        (uint256 assets, ) = _exit(msg.sender, _receiver, _owner, minAssets, _shares, true);
+        uint256 desiredAssets = previewRedeem(_shares);
+        _settleUnrealizedLosses();
+        uint256 assets = previewRedeem(_shares);
 
-        require(assets >= minAssets, Errors.SlippageCheckFailed(minAssets, assets));
+        _checkSlippage(desiredAssets, assets, _shares, _shares);
+        _exit(msg.sender, _receiver, _owner, assets, _shares);
 
         return assets;
     }
@@ -309,6 +290,25 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         }
     }
 
+    /// @notice Calculates slippage based on exchange rate degradation between expected and actual values
+    /// @param _expectedAssets Expected asset amount before settling unrealized losses
+    /// @param _actualAssets Actual asset amount after settling unrealized losses  
+    /// @param _expectedShares Expected share amount before settling unrealized losses
+    /// @param _actualShares Actual share amount after settling unrealized losses
+    function _checkSlippage(
+        uint256 _expectedAssets,
+        uint256 _actualAssets, 
+        uint256 _expectedShares,
+        uint256 _actualShares
+    ) internal view {
+        if (_expectedAssets == 0 || _expectedShares == 0) return;
+        
+        uint256 expectedExchangeRate = _expectedAssets.mulDiv(1 ether, _expectedShares);
+        uint256 actualExchangeRate = _actualAssets.mulDiv(1 ether, _actualShares);
+        uint256 slippage = expectedExchangeRate > actualExchangeRate ? (expectedExchangeRate - actualExchangeRate).mulDiv(MAX_BPS, expectedExchangeRate) : 0;
+        require(slippage <= slippageLimit, Errors.SlippageCheckFailed(slippage, slippageLimit));
+    }
+
     /// @notice Calculates the current profit and loss (PnL) across all active strategies.
     /// @return totalProfit The total profit across all active strategies, after deducting the performance fee.
     /// @return totalLoss The total loss across all active strategies.
@@ -379,55 +379,36 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @param _owner The address of the owner of the shares being withdrawn.
     /// @param _assets The amount of assets to withdraw.
     /// @param _shares The amount of shares to burn.
-    /// @param _consumeAllShares True if all `_shares` should be used to withdraw. False if it should withdraw just `_assets`.
-    /// @return The number of assets withdrawn and the shares burned as a result of the withdrawal.
     function _exit(
         address _caller,
         address _receiver,
         address _owner,
         uint256 _assets,
-        uint256 _shares,
-        bool _consumeAllShares
-    ) internal returns (uint256, uint256) {
+        uint256 _shares
+    ) internal {
+        require(_receiver != address(0) && _receiver != address(this), Errors.InvalidAddress(_receiver));
         require(_shares > 0, Errors.ZeroAmount(_shares));
 
-        if (_caller != _owner) {
-            _spendAllowance(_owner, _caller, _shares);
-        }
-
-        uint256 assets = _consumeAllShares ? _convertToAssets(_shares, Math.Rounding.Floor) : _assets;
-
-        if(assets > _balance()) {
-            for(uint8 i = 0; i <= withdrawOrder.length; ++i){
+        if (_caller != _owner) _spendAllowance(_owner, _caller, _shares);
+        if (_assets > _balance()) {
+            for(uint8 i = 0; i < activeStrategies; ++i){
                 address strategy = withdrawOrder[i];
-
-                // We reached the end of the withdraw queue and assets are still higher than the balance
-                require(strategy != address(0), Errors.InsufficientBalance(assets, _balance()));
-
-                // We can't withdraw from a strategy more than what it has asked as credit.
-                uint256 assetsToWithdraw = Math.min(assets - _balance(), strategies[strategy].totalDebt);
+                uint256 assetsToWithdraw = (_assets - _balance())
+                                                .min(strategies[strategy].totalDebt)
+                                                .min(IStrategyAdapter(strategy).availableLiquidity());
                 if(assetsToWithdraw == 0) continue;
 
                 uint256 withdrawn = IStrategyAdapter(strategy).withdraw(assetsToWithdraw);
                 strategies[strategy].totalDebt -= withdrawn;
                 totalDebt -= withdrawn;
 
-                IStrategyAdapter(strategy).askReport();
-
-                // Update assets, as a loss could have been reported and user should get less assets for
-                // the same amount of shares.
-                if(_consumeAllShares) assets = _convertToAssets(_shares, Math.Rounding.Floor);
-                if(assets <= _balance()) break;
+                if(_assets <= _balance()) break;
             }
         }
+        _burn(_owner, _shares);
+        IERC20(asset()).safeTransfer(_receiver, _assets);
 
-        uint256 shares = _consumeAllShares ? _shares : _convertToShares(assets, Math.Rounding.Ceil);
-        _burn(_owner, shares);
-        IERC20(asset()).safeTransfer(_receiver, assets);
-
-        emit Withdraw(_caller, _receiver, _owner, assets, shares);
-
-        return (assets, shares);
+        emit Withdraw(_caller, _receiver, _owner, _assets, _shares);
     }
 
     /// @notice Requests credit for an active strategy.
@@ -478,6 +459,18 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(feesCollected > 0) IERC20(asset()).safeTransfer(protocolFeeRecipient, feesCollected);
 
         emit StrategyReported(msg.sender, debtToRepay, _gain, _loss);
+    }
+
+    /// @notice Loops through the active strategies and settles any unrealized loss.
+    /// @dev To be executed before any withdraw or redeem. Adds loss front-running protection
+    function _settleUnrealizedLosses() internal {
+        for(uint8 i = 0; i < activeStrategies; ++i){
+            address strategy = withdrawOrder[i];
+            if(strategies[strategy].debtRatio == 0) continue;
+            
+            (, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
+            if(loss > 0) IStrategyAdapter(strategy).askReport();
+        }
     }
 
     /// @notice Settles a loss for a strategy.

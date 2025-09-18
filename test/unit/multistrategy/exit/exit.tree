@@ -1,0 +1,37 @@
+exit.t.sol
+├── when the receiver is the zero address
+│   └── it should revert with InvalidAddress error
+└── when the receiver is not the zero address
+    ├── when the receiver is the multistrategy address
+    │   └── it should revert with InvalidAddress error
+    └── when the receiver is not the multistrategy address
+        ├── when the amount of shares is zero
+        │   └── it should revert with ZeroAmount error
+        └── when the amount of shares is not zero
+            ├── when the caller is different from the owner
+            │   ├── when the allowance set from the owner to the caller is lower than the amount of shares
+            │   │   └── it should revert with InsufficientAllowance error
+            │   └── when the allowance set from the owner to the caller is higher or equal than the amount of shares
+            │       ├── when the balance of the Multistrategy is higher than the amount of assets to exit
+            │       │   ├── it should burn the amount of shares from owner
+            │       │   ├── it should transfer the amount of assets to the receiver
+            │       │   └── it should emit a Withdraw event
+            │       └── when the balance of the Multistrategy is lower than the amount of assets to exit
+            │           ├── when the assets withdrawn from the Adapters are lower than the amount of assets
+            │           │   └── it should revert with InsufficientBalance error
+            │           └── when the assets withdrawn from the Adapters is higher or equal than the amount of assets
+            │               ├── it should burn the amount of shares from owner
+            │               ├── it should transfer the amount of assets to the receiver
+            │               └── it should emit a Withdraw event
+            └── when the caller is the owner
+                ├── when the balance of the Multistrategy is higher than the amount of assets to exit
+                │   ├── it should burn the amount of shares from owner
+                │   ├── it should transfer the amount of assets to the receiver
+                │   └── it should emit a Withdraw event
+                └── when the balance of the Multistrategy is lower than the amount of assets to exit
+                    ├── when the assets withdrawn from the Adapters are lower than the amount of assets
+                    │   └── it should revert with InsufficientBalance error
+                    └── when the assets withdrawn from the Adapters is higher or equal than the amount of assets
+                        ├── it should burn the amount of shares from owner
+                        ├── it should transfer the amount of assets to the receiver
+                        └── it should emit a Withdraw event

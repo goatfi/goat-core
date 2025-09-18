@@ -1,0 +1,16 @@
+settleUnrealizedLosses.t.sol
+├── when there are no active strategies
+│   └── it should not modify lockedProfit
+└── when there are active strategies
+    ├── when the strategy debtRatio is 0
+    │   └── it should not modify lockedProfit
+    └── when the strategy debtRatio is higher than 0
+        ├── when the strategy doesn't have any loss
+        │   └── it should not modify lockedProfit
+        └── when the strategy has a loss
+            ├── when lockedProfit is higher than the loss
+            │   ├── it should reduce lockedProfit by the loss
+            │   └── it should add the loss the the strategy data
+            └── when lockedProfit is lower than the loss
+                ├── it should set lockedProfit to 0
+                └── it should reduce the conversion from shares to assets to a lower value.

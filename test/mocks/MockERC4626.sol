@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 import { ERC4626 } from "solady/tokens/ERC4626.sol";
-import { SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
 import { IMockERC20 } from "./MockERC20.sol";
 
