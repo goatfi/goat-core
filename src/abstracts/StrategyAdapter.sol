@@ -14,7 +14,8 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    /// @dev 100% in BPS, setting the slippage to 100% means no slippage protection.
+    /// @notice Maximum slippage. 100% in BPS.
+    /// @dev Setting the slippage to 100% means no slippage protection.
     uint256 constant MAX_SLIPPAGE = 10_000;
 
     /// @inheritdoc IStrategyAdapter
@@ -38,6 +39,8 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     
     /// @dev Reverts if `_asset` doesn't match `asset` on the Multistrategy.
     /// @param _multistrategy Address of the multistrategy this strategy will belongs to.
+    /// @param _name Name of the strategy.
+    /// @param _id Identifier of the strategy.
     constructor(address _multistrategy, string memory _name, string memory _id) StrategyAdapterAdminable(msg.sender) {
         multistrategy = _multistrategy;
         asset = IERC4626(_multistrategy).asset();
@@ -47,7 +50,8 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
         IERC20(asset).forceApprove(multistrategy, type(uint256).max);
     }
 
-    /// @dev Reverts if called by any account other than the Multistrategy this strategy belongs to.
+    /// @notice Checks if `msg.sender` is the Multistrategy.
+    /// @dev Reverts if `msg.sender` isn't the Multistrategy.
     modifier onlyMultistrategy() {
         require(msg.sender == multistrategy, Errors.CallerNotMultistrategy(msg.sender));
         _;
@@ -161,7 +165,7 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
         return IERC20(asset).balanceOf(address(this));
     }
 
-    /// @notice Returns the amount of `asset` the underlying strategy holds. 
+    /// @notice Returns the amount of `asset` the underlying strategy holds.
     /// @dev In the case this strategy has swapped `asset` for another asset, it should return the most approximate value.
     /// Child contract must implement the logic to calculate the amount of assets.
     function _totalAssets() internal virtual view returns (uint256);
@@ -217,7 +221,7 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
 
     /// @notice Withdraws as much funds as possible from the underlying strategy.
     /// @dev Child contract must implement the logic to withdraw as much funds as possible.
-    /// The withdraw process shouldn't have a slippage check, as it is in an emergency situation.
+    /// The emergency withdraw process won't have a slippage check, as it is in an emergency situation.
     function _emergencyWithdraw() internal virtual;
 
     /// @dev Grants allowance for `asset` to the contracts used by the strategy adapter.

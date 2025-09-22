@@ -2,12 +2,7 @@
 
 pragma solidity 0.8.30;
 
-import { 
-    IERC20,
-    IERC4626,
-    ERC20,
-    ERC4626
-} from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
+import { IERC20, IERC4626, ERC20, ERC4626 } from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import { ReentrancyGuard } from "@openzeppelin/utils/ReentrancyGuard.sol";
 import { SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
@@ -21,11 +16,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     using SafeERC20 for IERC20;
     using Math for uint256;
     
-    /// @dev How much time it takes for the profit of a strategy to be unlocked.
+    /// @notice How much time it takes for the profit of a strategy to be unlocked.
     uint256 public constant PROFIT_UNLOCK_TIME = 3 days;
-
-    /// @dev Used for locked profit calculations.
-    uint256 public constant DEGRADATION_COEFFICIENT = 1 ether;
 
     /// @notice OpenZeppelin decimals offset used by the ERC4626 implementation.
     /// @dev Calculated to be max(0, 18 - underlyingDecimals) at construction, so the initial conversion rate maximizes
@@ -65,7 +57,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         DECIMALS_OFFSET = uint8(Math.max(0, uint256(18) - IERC20Metadata(_asset).decimals()));
         performanceFee = 1000;
         lastReport = block.timestamp;
-        LOCKED_PROFIT_DEGRADATION = DEGRADATION_COEFFICIENT / PROFIT_UNLOCK_TIME;
+        LOCKED_PROFIT_DEGRADATION = 1 ether / PROFIT_UNLOCK_TIME;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -283,10 +275,10 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// is the time since last report. Returns 0 after 3 days.
     /// @return newLockedProfit The calculated current locked profit.
     function _calculateLockedProfit() internal view returns (uint256 newLockedProfit) {
-        // 3 days in seconds * LOCKED_PROFIT_DEGRADATION = DEGRADATION_COEFFICIENT
+        // 3 days in seconds * LOCKED_PROFIT_DEGRADATION = 1 ether
         uint256 lockedFundsRatio = (block.timestamp - lastReport) * LOCKED_PROFIT_DEGRADATION;
-        if(lockedFundsRatio < DEGRADATION_COEFFICIENT) {
-            newLockedProfit = lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, DEGRADATION_COEFFICIENT);
+        if(lockedFundsRatio < 1 ether) {
+            newLockedProfit = lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, 1 ether);
         }
     }
 
@@ -350,6 +342,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         }
     }
 
+    /// @notice The difference between 18 and the asset's decimals.
+    /// @return The decimal offset.
     function _decimalsOffset() internal view override returns (uint8) {
         return DECIMALS_OFFSET;
     }

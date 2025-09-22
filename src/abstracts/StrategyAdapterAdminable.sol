@@ -15,6 +15,7 @@ abstract contract StrategyAdapterAdminable is IStrategyAdapterAdminable, Ownable
     /// @inheritdoc IStrategyAdapterAdminable
     mapping(address guardianAddress => bool isActive) public guardians;
 
+    /// @param _owner The address that will be set as owner.
     constructor(address _owner) Ownable(_owner) {}
 
     /*//////////////////////////////////////////////////////////////////////////

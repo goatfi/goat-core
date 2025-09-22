@@ -55,14 +55,14 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @dev Performance fee is taken on `strategyReport()` function on the Multistrategy contract.
     function performanceFee() external view returns (uint256);
 
-    /// @notice Limit for total assets the multistrategy can hold.
+    /// @notice Limit of assets that can be deposited in the Multistrategy
     function depositLimit() external view returns (uint256);
 
     /// @notice Debt ratio of the multistrategy across all strategies (in BPS).
     /// @dev The debt ratio cannot exceed 10_000 BPS (100 %).
     function debtRatio() external view returns (uint256);
 
-    /// @notice Amount of tokens that the strategies have borrowed in total.
+    /// @notice The amount of debt among all active strategies.
     function totalDebt() external view returns (uint256);
 
     /// @notice Returns the current slippage limit in basis points (BPS).
@@ -75,7 +75,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @notice Returns the withdraw order.
     function getWithdrawOrder() external view returns (address[] memory);
 
-    /// @notice Returns the strategy params of `strategy`
+    /// @notice Returns the strategy parameters of `strategy`
     /// @param _strategy Address of the strategy the it will returns the parameters of.
     function getStrategyParameters(address _strategy) external view returns (MStrat.StrategyParams calldata);
 

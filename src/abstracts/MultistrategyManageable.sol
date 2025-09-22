@@ -10,13 +10,13 @@ import { Errors } from "../libraries/Errors.sol";
 
 abstract contract MultistrategyManageable is IMultistrategyManageable, MultistrategyAdminable {
 
-    /// @dev Maximum amount of different strategies this contract can deposit into
+    /// @notice Maximum amount of different strategies this contract can deposit into.
     uint8 constant MAXIMUM_STRATEGIES = 10;
 
-    /// @dev Maximum basis points (10_000 = 100%)
+    /// @notice Maximum basis points (10_000 = 100%)
     uint256 constant MAX_BPS = 10_000;
 
-    /// @dev Maximum performance fee that the owner can set is 20%
+    /// @notice Maximum performance fee that the owner can set is 20%.
     uint256 constant MAX_PERFORMANCE_FEE = 2_000;
     
     /// @inheritdoc IMultistrategyManageable
@@ -44,13 +44,10 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
                                   PRIVATE STORAGE
     //////////////////////////////////////////////////////////////////////////*/
 
-    /// @dev Strategy parameters mapped by the strategy address
+    /// @notice Strategy parameters mapped by the strategy address
     mapping(address strategyAddress => MStrat.StrategyParams strategyParameters) public strategies;
 
-    /// @dev Order that `_withdraw()` uses to determine which strategy pull the funds from
-    //       The first time a zero address is encountered, it stops withdrawing, so it is
-    //       possible that there isn't enough to withdraw if the amount of strategies in
-    //       `withdrawOrder` is smaller than the amount of active strategies.
+    /// @notice Order that `_withdraw()` uses to determine which strategy pull the funds from.
     address[] public withdrawOrder;
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -78,6 +75,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
                                     MODIFIER
     //////////////////////////////////////////////////////////////////////////*/
 
+    /// @notice Check if `_strategy` is active.
     /// @dev Reverts if `_strategy` is not active.
     /// @param _strategy Address of the strategy to check if it is active. 
     modifier onlyActiveStrategy(address _strategy) {
@@ -125,6 +123,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         emit DepositLimitSet(depositLimit);
     }
 
+    /// @inheritdoc IMultistrategyManageable
     function setSlippageLimit(uint256 _slippageLimit) external onlyManager {
         require(_slippageLimit <= MAX_BPS, Errors.SlippageLimitExceeded(_slippageLimit));
         

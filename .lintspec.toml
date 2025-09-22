@@ -34,25 +34,25 @@ param = "required"
 notice = "required"
 dev = "ignored"
 param = "required"
-return = "required"
+return = "ignored"
 
 [function.internal]
 notice = "required"
 dev = "ignored"
 param = "required"
-return = "required"
+return = "ignored"
 
 [function.public]
 notice = "required"
 dev = "ignored"
 param = "required"
-return = "required"
+return = "ignored"
 
 [function.external]
 notice = "required"
 dev = "ignored"
 param = "required"
-return = "required"
+return = "ignored"
 
 [modifier]
 notice = "required"

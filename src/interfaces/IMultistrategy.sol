@@ -36,6 +36,8 @@ interface IMultistrategy is IMultistrategyManageable {
     function strategyTotalDebt(address strategy) external view returns (uint256);
 
     /// @notice Returns the aggregate PnL of all strategies at max slippage.
+    /// @return gain The aggregate gain.
+    /// @return loss The aggregate loss.
     function currentPnL() external view returns (uint256, uint256);
 
     /// @notice Returns the current available liqudity of this Multistrategy.
@@ -43,13 +45,13 @@ interface IMultistrategy is IMultistrategyManageable {
     
     /// @notice Send the available credit of the caller to the caller.
     /// @dev Reverts if the caller is *NOT* an active strategy
+    /// @return The amount sent to the caller.
     function requestCredit() external returns (uint256);
 
     /// @notice Report the profit or loss of a strategy along any debt the strategy is willing to pay back.
     /// @dev Can only be called by an active strategy.
     /// @param _debtRepayment Amount that the strategy will send back to the multistrategy as debt repayment.
-    /// @param _gain Amount that the strategy has realized as a gain since the last report and will send it
-    ///                to this Multistrategy as earnings. 
+    /// @param _gain Amount that the strategy has realized as a gain since the last report and will send it to this Multistrategy as earnings. 
     /// @param _loss Amount that the strategy has realized as a loss since the last report. 
     function strategyReport(uint256 _debtRepayment, uint256 _gain, uint256 _loss) external;
 }
