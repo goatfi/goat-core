@@ -1,0 +1,8 @@
+setSlippageLimit.t.sol
+├── when the caller is not the manager
+│   └── it should revert
+└── when the caller is the manager
+    ├── when the slippage limit is above the maximum allowed
+    │   └── it should revert with SlippageLimitExceeded error
+    └── when the slippage limit is within the allowed range
+        └── it should set the slippage limit and emit the SlippageLimitSet event

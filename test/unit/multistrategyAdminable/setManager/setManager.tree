@@ -1,0 +1,9 @@
+setManager.t.sol
+├── when the caller is not the owner
+│  └── it should revert OwnableUnauthorizedAccount error
+└── when the caller is the owner
+   ├── when the new manager is the zero address
+   │  └── it should revert with ZeroAddress error
+   └── when the new manager is not the zero address
+      ├── it should set the manager
+      └── it should emit a {ManagerSet} event

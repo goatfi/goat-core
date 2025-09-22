@@ -1,0 +1,11 @@
+sharesForAmount.t.sol
+├── when amount is 0
+│   └── it should return 0
+└── when amount is greater than 0
+    ├── when freeFunds is 0
+    │   └── it should return 0
+    └── when freeFunds is greater than 0
+        ├── when asset decimals == 18
+        │   └── it should return amount multiplied by totalSupply divided by freeFunds
+        └── when asset decimals < 18
+            └── it should return amount multiplied by (totalSupply + 10^(18-decimals)) divided by freeFunds

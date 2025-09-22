@@ -15,15 +15,16 @@ abstract contract StrategyAdapterAdminable is IStrategyAdapterAdminable, Ownable
     /// @inheritdoc IStrategyAdapterAdminable
     mapping(address guardianAddress => bool isActive) public guardians;
 
+    /// @param _owner The address that will be set as owner.
     constructor(address _owner) Ownable(_owner) {}
 
     /*//////////////////////////////////////////////////////////////////////////
                                     MODIFIERS
     //////////////////////////////////////////////////////////////////////////*/
 
-    /// @notice Reverts if called by any account other than the owner, the manager, or a guardian.
+    /// @notice Reverts if called by any account other than the owner, or a guardian.
     modifier onlyGuardian() {
-        require(msg.sender == owner() || guardians[msg.sender], Errors.CallerNotGuardian(msg.sender));
+        require(msg.sender == owner() || guardians[msg.sender], Errors.Unauthorized(msg.sender));
         _;
     }
 

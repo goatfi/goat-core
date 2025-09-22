@@ -1,0 +1,6 @@
+revokeGuardian.t.sol
+├── when the caller is not the owner
+│  └── it should revert with OwnableUnauthorizedAccount error.
+└── when the caller is the owner
+   ├── it should revoke the guardian
+   └── it should emit a {GuardianRevoked} event

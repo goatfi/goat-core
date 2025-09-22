@@ -1,0 +1,24 @@
+availableLiquidity.t.sol
+└── when the multistrategy has deposits
+    ├── when the multistrategy has no active strategy
+    │   └── it should return the multistrategy balance
+    └── when the multistrategy has an active strategy
+        ├── when the strategy has not requested credit
+        │   └── it should return the multistrategy balance
+        └── when the strategy has requested credit
+            ├── when there is one strategy
+            │   ├── when the strategy has more liquidity than assets
+            │   │   └── it should return the multistrategy balance plus the totalAssets of the strategy
+            │   └── when the strategy has less liquidity than the assets
+            │       └── it should return the multistrategy balance plus the liquidity of the strategy
+            └── when there are multiple strategies
+                ├── when all the strategies have more liquidity than totalAssets
+                │   └── it should return the multistrategy balance plus the sum of the totalAssets of all the strategies
+                └── when not all strategies have more liquidity than totalAssets
+                    └── it should return the multistrategy balance plus the sum of totalAssets for strategies with more liquidity than assets, up to and including the strategy with limited liquidity (adding only its available liquidity).
+
+
+Extra case:
+
+What happens when the strategy has made a gain but there isn't enough liquidity to even cover the gain? If the amount being withdrawn needs that liquidity, the withdraw would revert.
+And a withdraw can't revert if it has con

@@ -1,0 +1,9 @@
+setPerformanceFee function
+├── when the caller is not the owner
+│  └── revert with OwnableUnauthorizedAccount error
+└── when the caller is the owner
+   ├── when _performanceFee > MAX_PERFORMANCE_FEE
+   │  └── revert with ExcessiveFee error
+   └── when _performanceFee <= MAX_PERFORMANCE_FEE
+      ├── set performanceFee to _performanceFee
+      └── emit PerformanceFeeSet event

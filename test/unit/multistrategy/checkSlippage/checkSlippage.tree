@@ -1,0 +1,19 @@
+checkSlippage.t.sol
+├── when expected shares is 0
+│   └── it should return early without reverting
+├── when actual shares is 0
+│   └── it should return early without reverting
+└── when both expected shares and actual shares are greater than 0
+    ├── when expected exchange rate is less than actual exchange rate
+    │   ├── it should calculate slippage as 0
+    │   └── it should not revert
+    ├── when expected exchange rate equals actual exchange rate
+    │   ├── it should calculate slippage as 0
+    │   └── it should not revert
+    └── when expected exchange rate is greater than actual exchange rate
+        ├── when calculated slippage is less than slippage limit
+        │   └── it should not revert
+        ├── when calculated slippage equals slippage limit
+        │   └── it should not revert
+        └── when calculated slippage is greater than slippage limit
+            └── it should revert with SlippageCheckFailed error

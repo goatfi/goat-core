@@ -9,16 +9,10 @@ library Errors {
     //////////////////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Thrown when `msg.sender` is not the manager.
+     * @notice Thrown when `msg.sender` is not authorized to make the call.
      * @param caller The address that attempted to call the restricted function.
      */
-    error CallerNotManager(address caller);
-
-    /**
-     * @notice Thrown when `msg.sender` is not a guardian.
-     * @param caller The address that attempted to call the restricted function.
-     */
-    error CallerNotGuardian(address caller);
+    error Unauthorized(address caller);
 
     /**
      * @notice Thrown when `amount` is zero.
@@ -83,9 +77,14 @@ library Errors {
     error DebtRatioAboveMaximum(uint256 debtRatio);
 
     /**
-     * @notice Thrown when trying to remove a strategy from `withdrawOrder` that still has outstanding debt.
+     * @notice Thrown when trying to remove a strategy that has a non-zero `debtRatio`.
      */
-    error StrategyWithOutstandingDebt();
+    error StrategyWithActiveDebtRatio();
+
+    /**
+     * @notice Thrown when trying to remove a strategy from `withdrawOrder` that still has debt.
+     */
+    error StrategyWithActiveDebt();
 
     /**
      * @notice Thrown when `minDebtDelta` is greater than `maxDebtDelta`, or vice versa.
@@ -110,14 +109,10 @@ library Errors {
     error MaximumAmountStrategies();
 
     /**
-     * @notice Thrown when trying to remove a strategy that has a non-zero `debtRatio`.
+     * @notice Thrown when `strategy` is not valid.
+     * @param strategy The address that failed validation.
      */
-    error StrategyNotRetired();
-
-    /**
-     * @notice Thrown when attempting to deposit or mint on a retired multistrategy.
-     */
-    error Retired();
+    error InvalidStrategy(address strategy);
 
     /*//////////////////////////////////////////////////////////////////////////
                                 STRATEGY ADAPTER
@@ -128,14 +123,6 @@ library Errors {
      * @param caller The address that attempted to call the restricted function.
      */
     error CallerNotMultistrategy(address caller);
-
-    /**
-     * @notice Thrown when the `_asset` parameter in the constructor doesn't match 
-     * the deposit token defined by the Multistrategy contract.
-     * @param multAsset The asset address expected by the Multistrategy.
-     * @param stratAsset The asset address provided to the strategy.
-     */
-    error AssetMismatch(address multAsset, address stratAsset);
 
     /**
      * @notice Thrown when the requested slippage limit exceeds the maximum permitted value.
@@ -170,44 +157,4 @@ library Errors {
      * @notice Thrown when a gauge is invalid.
      */
     error InvalidGauge();
-
-    /*//////////////////////////////////////////////////////////////////////////
-                                    ERC-4626
-    //////////////////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Thrown when attempted to deposit more assets than the max amount for `receiver`.
-     * @dev Reverts when `assets` is greater than `maxDeposit(receiver)`.
-     * @param receiver The address for which the deposit is being attempted.
-     * @param assets The number of assets the user attempted to deposit.
-     * @param max The maximum number of assets that can be deposited for the receiver.
-     */
-    error ERC4626ExceededMaxDeposit(address receiver, uint256 assets, uint256 max);
-
-    /**
-     * @notice Thrown when attempted to mint more shares than the max amount for `receiver`.
-     * @dev Reverts when `shares` is greater than `maxMint(receiver)`.
-     * @param receiver The address for which the minting is being attempted.
-     * @param shares The number of shares the user attempted to mint.
-     * @param max The maximum number of shares that can be minted for the receiver.
-     */
-    error ERC4626ExceededMaxMint(address receiver, uint256 shares, uint256 max);
-
-    /**
-     * @notice Thrown when attempted to withdraw more assets than the max amount for `owner`.
-     * @dev Reverts when `assets` is greater than `maxWithdraw(owner)`.
-     * @param owner The address that owns the shares being redeemed for assets.
-     * @param assets The number of assets the user attempted to withdraw.
-     * @param max The maximum number of assets that can be withdrawn by the owner.
-     */
-    error ERC4626ExceededMaxWithdraw(address owner, uint256 assets, uint256 max);
-
-    /**
-     * @notice Thrown when attempted to redeem more shares than the max amount for `owner`.
-     * @dev Reverts when `shares` is greater than `maxRedeem(owner)`.
-     * @param owner The address that owns the shares to be redeemed.
-     * @param shares The number of shares the user attempted to redeem.
-     * @param max The maximum number of shares that can be redeemed by the owner.
-     */
-    error ERC4626ExceededMaxRedeem(address owner, uint256 shares, uint256 max);
 }

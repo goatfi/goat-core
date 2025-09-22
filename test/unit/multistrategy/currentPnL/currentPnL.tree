@@ -1,0 +1,10 @@
+_currentPnL
+├── when activeStrategies is 0
+│   └── it should return (0, 0)
+└── when activeStrategies is greater than 0
+        ├── when a strategy has totalDebt of 0
+        │   └── it should continue to the next strategy
+        └── when a strategy has totalDebt greater than 0
+            ├── it should calculate profit as gain * (MAX_BPS - performanceFee) / MAX_BPS
+            ├── it should add the calculated profit to totalProfit
+            └── it should add loss to totalLoss

@@ -1,0 +1,10 @@
+mint.t.sol
+├── when the contract is paused
+│   └── it should revert with EnforcedPause error
+└── when the contract is not paused
+    ├── when the shares is greater than the maximum mint amount
+    │   └── it should revert with an ERC4626ExeededMaxMint error
+    └── when the shares is smaller or equal than the maximum mint amount
+        ├── it should issue the amount of shares to the receiver
+        ├── it should transfer the asset calculated by previewMint from the caller to the Multistrategy
+        └── it should emit a Deposit event

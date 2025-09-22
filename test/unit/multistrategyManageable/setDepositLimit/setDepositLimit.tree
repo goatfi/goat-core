@@ -1,0 +1,9 @@
+setDepositLimit
+├── when the caller is not the owner
+│   └── it should revert with Unauthorized error
+├── when the caller is the owner
+│   ├── it should set the depositLimit
+│   └── it should emit a DepositLimitSet event
+└── when the caller is the manager but not the owner
+    ├── it should set the depositLimit
+    └── it should emit a DepositLimitSet event

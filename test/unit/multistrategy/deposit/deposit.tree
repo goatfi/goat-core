@@ -1,0 +1,10 @@
+deposit.t.sol
+├── when the contract is paused
+│   └── it should revert with EnforcedPause error
+└── when the contract is not paused
+    ├── when assets is greater than the maximum deposit amount
+    │   └── it should revert with ERC4626ExceededMaxDeposit error
+    └── when assets is smaller or equal than the maximum deposit amount
+        ├── it should issue the amount of shares according returned by previewDeposit to the receiver
+        ├── it should transfer the asset from the caller to the Multistrategy
+        └── it should emit a Deposit event

@@ -44,16 +44,9 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @param _strategy The address of the newly added strategy.
     event StrategyAdded(address indexed _strategy);
 
-    /// @notice Emitted when a strategy is retired.
-    /// @param _strategy The address of the retired strategy.
-    event StrategyRetired(address indexed _strategy);
-
     /// @notice Emitted when a strategy is removed.
     /// @param _strategy The address of the removed strategy.
     event StrategyRemoved(address indexed _strategy);
-
-    /// @notice Emitted when the deposits into this multistrategy are paused.
-    event MultistrategyRetired();
 
     /// @notice Address that will receive performance fee.
     function protocolFeeRecipient() external view returns (address);
@@ -62,14 +55,14 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @dev Performance fee is taken on `strategyReport()` function on the Multistrategy contract.
     function performanceFee() external view returns (uint256);
 
-    /// @notice Limit for total assets the multistrategy can hold.
+    /// @notice Limit of assets that can be deposited in the Multistrategy
     function depositLimit() external view returns (uint256);
 
     /// @notice Debt ratio of the multistrategy across all strategies (in BPS).
     /// @dev The debt ratio cannot exceed 10_000 BPS (100 %).
     function debtRatio() external view returns (uint256);
 
-    /// @notice Amount of tokens that the strategies have borrowed in total.
+    /// @notice The amount of debt among all active strategies.
     function totalDebt() external view returns (uint256);
 
     /// @notice Returns the current slippage limit in basis points (BPS).
@@ -79,13 +72,10 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @notice Amount of active strategies.
     function activeStrategies() external view returns (uint8);
 
-    /// @notice Returns true if multistrategy has been retired. 
-    function retired() external view returns (bool);
-
     /// @notice Returns the withdraw order.
     function getWithdrawOrder() external view returns (address[] memory);
 
-    /// @notice Returns the strategy params of `strategy`
+    /// @notice Returns the strategy parameters of `strategy`
     /// @param _strategy Address of the strategy the it will returns the parameters of.
     function getStrategyParameters(address _strategy) external view returns (MStrat.StrategyParams calldata);
 
@@ -128,11 +118,6 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
         uint256 _maxDebtDelta
     ) external;
 
-    /// @notice Sets the strategy debtRatio to 0, which prevents any further deposits into the strategy.
-    /// @dev Retiring a strategy will set the approval of `asset` to the retired strategy to 0.
-    /// @param _strategy The address of the strategy that will be retired.
-    function retireStrategy(address _strategy) external;
-
     /// @notice Removes a strategy from `withdrawOrder`.
     /// @param _strategy The address of the strategy that will be removed.
     function removeStrategy(address _strategy) external;
@@ -154,7 +139,4 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @param _strategy Address of the strategy.
     /// @param _maxDebtDelta Upper limit of the change of debt.
     function setStrategyMaxDebtDelta(address _strategy, uint256 _maxDebtDelta) external;
-
-    /// @notice Retires the Multistrategy. End of Life.
-    function retire() external;
 }

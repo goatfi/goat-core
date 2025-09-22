@@ -1,0 +1,19 @@
+constructor.t.sol
+├── when protocolFeeRecipient is address(0)
+│   └── it should revert with ZeroAddress
+└── when protocolFeeRecipient is not address(0)
+    ├── it should set the owner to msg.sender
+    ├── it should set the manager
+    ├── it should set the protocolFeeRecipient
+    ├── it should initialize withdrawOrder as an array of 10 addresses, all zero
+    ├── it should set performanceFee to 1000
+    ├── it should set lastReport to block.timestamp
+    ├── it should calculate DECIMALS_OFFSET based on asset decimals
+    ├── it should calculate LOCKED_PROFIT_DEGRADATION
+    ├── it should set depositLimit to 0
+    ├── it should set slippageLimit to 0
+    ├── it should set debtRatio to 0
+    ├── it should set totalDebt to 0
+    ├── it should set activeStrategies to 0
+    ├── it should set retired to false
+    └── it should initialize lockedProfit to 0

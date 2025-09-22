@@ -1,0 +1,23 @@
+withdraw.t.sol
+├── when the contract is paused
+│   └── it should revert with EnforcedPause error
+└── when the contract is not paused
+    ├── when the owner doesn't have enough shares to cover the withdraw
+    │   └── it should revert with ERC4626ExceededMaxWithdraw error
+    └── when the owner has enough shares to cover the withdraw
+        ├── when there isn't enough liquidity to cover the withdraw
+        │   └── it should revert with ERC4626ExceededMaxWithdraw error
+        └── when there is enough liquidity to covert the withdraw
+            ├── when there is slippage
+            │   ├── when the slippage limit is not respected
+            │   │   └── it should revert with SlippageCheckFailed error
+            │   └── when the slippage limit is respected
+            │       ├── it should burn the amount shares from the owner
+            │       ├── it should send the amount of assets to the receiver
+            │       ├── it should emit a Withdraw event
+            │       └── it should return the amount of shares burned
+            └── when there is no slippage
+                ├── it should burn the amount shares from the owner
+                ├── it should send the amount of assets to the receiver
+                ├── it should emit a Withdraw event
+                └── it should return the amount of shares burned

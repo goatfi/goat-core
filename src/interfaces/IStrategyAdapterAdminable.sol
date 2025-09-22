@@ -13,6 +13,7 @@ interface IStrategyAdapterAdminable {
 
     /// @notice List of addresses enabled as guardian.
     /// @param _guardian The address to check if it is a guardian.
+    /// @return True if the address is enabled as guardian.
     function guardians(address _guardian) external view returns (bool);
 
     /// @notice Enables an address to be a guardian.

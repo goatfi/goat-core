@@ -32,6 +32,7 @@ interface IMultistrategyAdminable {
 
     /// @notice List of addresses enabled as guardian.
     /// @param _guardian The address to check if it is a guardian.
+    /// @return True if the address is enabled as guardian.
     function guardians(address _guardian) external view returns (bool);
     
     /*//////////////////////////////////////////////////////////////////////////
@@ -61,11 +62,10 @@ interface IMultistrategyAdminable {
 
     /// @notice Pauses the smart contract.
     /// @dev Functions that implement the `paused` modifier will revert when called.
-    /// Guardians, Manager and Owner can call this function
+    /// Guardians and Owner can call this function
     function pause() external;
 
     /// @notice Unpauses the smart contract.
     /// @dev Functions that implement the `paused` won't revert when called.
-    /// Guardians, Manager and Owner can call this function
     function unpause() external;
 }

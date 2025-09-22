@@ -1,0 +1,13 @@
+enter.t.sol
+├── when the receiver is the zero address
+│   └── it should revert with InvalidAddress error
+└── when the receiver is not the zero address
+    ├── when the receiver is the multistrategy address
+    │   └── it should revert with InvalidAddress error
+    └── when the receiver is not the multistrategy address
+        ├── when the amount of assets is zero
+        │   └── it should revert with ZeroAmount error
+        └── when the amount of assets is not zero
+            ├── it should transfer the amount of assets from the caller to the Multistrategy
+            ├── it should mint the amount of shares to the receiver
+            └── it should emit a Deposit event
