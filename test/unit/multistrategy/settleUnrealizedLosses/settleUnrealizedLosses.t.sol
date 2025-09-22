@@ -17,26 +17,26 @@ contract SettleUnrealizedLosses_Integration_Concrete_Test is MultistrategyHarnes
     }
 
     modifier whenThereAreActiveStrategies() {
-        adapter = _createAndAddAdapter(5000, 0, type(uint256).max); // debtRatio 50%
+        adapter = _createAndAddAdapter(5000, 0, type(uint256).max);
         _;
     }
 
-    function test_SettleUnrealizedLosses_DebtRatioZero()
+    function test_SettleUnrealizedLosses_TotalDebtZero()
         external
         whenThereAreActiveStrategies
     {
         vm.prank(users.owner); multistrategy.setStrategyDebtRatio(address(adapter), 0);
+        vm.prank(users.manager); adapter.sendReport(type(uint256).max);
         
-
         uint256 initialLockedProfit = multistrategy.lockedProfit();
 
         multistrategy.settleUnrealizedLosses();
 
         uint256 finalLockedProfit = multistrategy.lockedProfit();
-        assertEq(finalLockedProfit, initialLockedProfit, "lockedProfit should not be modified when strategy debtRatio is 0");
+        assertEq(finalLockedProfit, initialLockedProfit, "lockedProfit should not be modified when strategy totalDebt is 0");
     }
 
-    modifier whenStrategyDebtRatioIsHigherThanZero() {
+    modifier whenStrategyTotalDebtIsHigherThanZero() {
         _userDeposit(users.alice, 1000 ether);
         vm.prank(users.manager); adapter.requestCredit();
         _;
@@ -45,7 +45,7 @@ contract SettleUnrealizedLosses_Integration_Concrete_Test is MultistrategyHarnes
     function test_SettleUnrealizedLosses_NoLoss()
         external
         whenThereAreActiveStrategies
-        whenStrategyDebtRatioIsHigherThanZero
+        whenStrategyTotalDebtIsHigherThanZero
     {
         adapter.earn(100 ether);
 
@@ -71,7 +71,7 @@ contract SettleUnrealizedLosses_Integration_Concrete_Test is MultistrategyHarnes
     function test_SettleUnrealizedLosses_LossLowerThanLockedProfit()
         external
         whenThereAreActiveStrategies
-        whenStrategyDebtRatioIsHigherThanZero
+        whenStrategyTotalDebtIsHigherThanZero
         whenStrategyHasLockedProfit(200 ether)
         whenStrategyHasALoss(100 ether)
     {
@@ -95,7 +95,7 @@ contract SettleUnrealizedLosses_Integration_Concrete_Test is MultistrategyHarnes
     function test_SettleUnrealizedLosses_LossHigherThanLockedProfit()
         external
         whenThereAreActiveStrategies
-        whenStrategyDebtRatioIsHigherThanZero
+        whenStrategyTotalDebtIsHigherThanZero
         whenStrategyHasLockedProfit(100 ether)
         whenStrategyHasALoss(200 ether)
     {

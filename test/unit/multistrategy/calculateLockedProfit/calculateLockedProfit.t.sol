@@ -98,8 +98,8 @@ contract CalculateLockedProfit_Integration_Concrete_Test is MultistrategyHarness
 
     function _calculateDegradedProfit(uint256 lockedProfit, uint256 timeElapsed) internal view returns (uint256) {
         uint256 lockedFundsRatio = timeElapsed * multistrategy.LOCKED_PROFIT_DEGRADATION();
-        if (lockedFundsRatio < multistrategy.DEGRADATION_COEFFICIENT()) {
-            return lockedProfit - Math.mulDiv(lockedFundsRatio, lockedProfit, multistrategy.DEGRADATION_COEFFICIENT());
+        if (lockedFundsRatio <  1 ether) {
+            return lockedProfit - Math.mulDiv(lockedFundsRatio, lockedProfit, 1 ether);
         }
         return 0;
     }

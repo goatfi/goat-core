@@ -2,9 +2,9 @@ settleUnrealizedLosses.t.sol
 ├── when there are no active strategies
 │   └── it should not modify lockedProfit
 └── when there are active strategies
-    ├── when the strategy debtRatio is 0
+    ├── when the strategy totalDebt is 0
     │   └── it should not modify lockedProfit
-    └── when the strategy debtRatio is higher than 0
+    └── when the strategy totalDebt is higher than 0
         ├── when the strategy doesn't have any loss
         │   └── it should not modify lockedProfit
         └── when the strategy has a loss

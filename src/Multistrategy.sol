@@ -428,8 +428,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         require(!(_gain > 0 && _loss > 0), Errors.GainLossMismatch());
         require(strategyBalance >= _debtRepayment + _gain, Errors.InsufficientBalance(strategyBalance, _debtRepayment + _gain));
 
-        uint256 profit;
-        uint256 feesCollected;
+        uint256 profit = 0;
+        uint256 feesCollected = 0;
         if(_loss > 0) _settleLoss(msg.sender, _loss);
         if(_gain > 0) {
             strategies[msg.sender].totalGain += _gain;
@@ -460,7 +460,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     function _settleUnrealizedLosses() internal {
         for(uint8 i = 0; i < activeStrategies; ++i){
             address strategy = withdrawOrder[i];
-            if(strategies[strategy].debtRatio == 0) continue;
+            if(strategies[strategy].totalDebt == 0) continue;
             
             (, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
             if(loss > 0) IStrategyAdapter(strategy).askReport();
