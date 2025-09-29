@@ -10,14 +10,12 @@ import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { MultistrategyManageable } from "src/abstracts/MultistrategyManageable.sol";
 import { IMultistrategy } from "interfaces/IMultistrategy.sol";
 import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
+import { Constants } from "./libraries/Constants.sol";
 import { Errors } from "./libraries/Errors.sol";
 
 contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
-    
-    /// @notice How much time it takes for the profit of a strategy to be unlocked.
-    uint256 public constant PROFIT_UNLOCK_TIME = 3 days;
 
     /// @notice OpenZeppelin decimals offset used by the ERC4626 implementation.
     /// @dev Calculated to be max(0, 18 - underlyingDecimals) at construction, so the initial conversion rate maximizes
@@ -57,7 +55,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         DECIMALS_OFFSET = uint8(Math.max(0, uint256(18) - IERC20Metadata(_asset).decimals()));
         performanceFee = 1000;
         lastReport = block.timestamp;
-        LOCKED_PROFIT_DEGRADATION = 1 ether / PROFIT_UNLOCK_TIME;
+        LOCKED_PROFIT_DEGRADATION = 1 ether / Constants.PROFIT_UNLOCK_TIME;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -221,10 +219,10 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @return The amount of credit available for the given strategy.
     function _creditAvailable(address _strategy) internal view returns (uint256) {
         uint256 mTotalAssets = totalAssets();
-        uint256 mDebtLimit = debtRatio.mulDiv(mTotalAssets, MAX_BPS);
+        uint256 mDebtLimit = debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS);
         uint256 mTotalDebt = totalDebt;
 
-        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(mTotalAssets, MAX_BPS);
+        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS);
         uint256 sTotalDebt = strategies[_strategy].totalDebt;
         uint256 sMinDebtDelta = strategies[_strategy].minDebtDelta;
         uint256 sMaxDebtDelta = strategies[_strategy].maxDebtDelta;
@@ -253,7 +251,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             return strategies[_strategy].totalDebt;
         }
 
-        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(totalAssets(), MAX_BPS);
+        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(totalAssets(), Constants.MAX_BPS);
         uint256 sTotalDebt = strategies[_strategy].totalDebt;
 
         if(sTotalDebt <= sDebtLimit) {
@@ -297,7 +295,10 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         
         uint256 expectedExchangeRate = _expectedAssets.mulDiv(1 ether, _expectedShares);
         uint256 actualExchangeRate = _actualAssets.mulDiv(1 ether, _actualShares);
-        uint256 slippage = expectedExchangeRate > actualExchangeRate ? (expectedExchangeRate - actualExchangeRate).mulDiv(MAX_BPS, expectedExchangeRate) : 0;
+        uint256 slippage = 
+            expectedExchangeRate > actualExchangeRate ? 
+            (expectedExchangeRate - actualExchangeRate).mulDiv(Constants.MAX_BPS, expectedExchangeRate)
+            : 0;
         require(slippage <= slippageLimit, Errors.SlippageCheckFailed(slippage, slippageLimit));
     }
 
@@ -312,7 +313,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             if(strategies[strategy].totalDebt == 0) continue;
 
             (uint256 gain, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
-            totalProfit += gain.mulDiv(MAX_BPS - performanceFee, MAX_BPS);
+            totalProfit += gain.mulDiv(Constants.MAX_BPS - performanceFee, Constants.MAX_BPS);
             totalLoss += loss;
         }
 
@@ -433,7 +434,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(_loss > 0) _settleLoss(msg.sender, _loss);
         if(_gain > 0) {
             strategies[msg.sender].totalGain += _gain;
-            feesCollected = _gain.mulDiv(performanceFee, MAX_BPS);
+            feesCollected = _gain.mulDiv(performanceFee, Constants.MAX_BPS);
             profit = _gain - feesCollected;
         } 
 

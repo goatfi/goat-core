@@ -35,10 +35,6 @@ contract MultistrategyHarness is Multistrategy {
         _settleLoss(_strategy, _loss);
     }
 
-    function profitUnlockTime() external pure returns (uint256) {
-        return PROFIT_UNLOCK_TIME;
-    }
-
     function enter(address _caller, address _receiver, uint256 _assets, uint256 _shares) external {
         _enter(_caller, _receiver, _assets, _shares);
     }
