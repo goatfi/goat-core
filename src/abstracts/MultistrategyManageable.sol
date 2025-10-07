@@ -157,10 +157,8 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         });
 
         debtRatio += _debtRatio;
-        withdrawOrder[Constants.MAXIMUM_STRATEGIES - 1] = _strategy;
+        withdrawOrder[activeStrategies] = _strategy;
         ++activeStrategies;
-
-        _organizeWithdrawOrder();
 
         emit StrategyAdded(_strategy);
     }
@@ -173,7 +171,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         for(uint8 i = 0; i < Constants.MAXIMUM_STRATEGIES; ++i) {
             if(withdrawOrder[i] == _strategy) {
                 withdrawOrder[i] = address(0);
-                strategies[_strategy].activation = 0;
+                delete strategies[_strategy];
                 --activeStrategies;
                 _organizeWithdrawOrder();
 
