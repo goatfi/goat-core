@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GNU AGPLv3
 
-pragma solidity ^0.8.27;
+pragma solidity 0.8.30;
 
 import { IMultistrategyAdminable } from "interfaces/IMultistrategyAdminable.sol";
 import { MStrat } from "../libraries/DataTypes.sol";
@@ -77,7 +77,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
 
     /// @notice Returns the strategy parameters of `strategy`
     /// @param _strategy Address of the strategy the it will returns the parameters of.
-    function getStrategyParameters(address _strategy) external view returns (MStrat.StrategyParams calldata);
+    function getStrategyParameters(address _strategy) external view returns (MStrat.StrategyParams memory);
 
     /// @notice Sets the recipient address of the performance fee.
     /// @dev Emits a `SetProtocolFeeRecipient` event.

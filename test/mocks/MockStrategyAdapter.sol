@@ -16,7 +16,7 @@ contract MockStrategyAdapter is StrategyAdapterHarness {
     uint256 surplus;
 
     /*//////////////////////////////////////////////////////////////////////////
-                                MOCK HELPER FUNCTIONS
+                                    CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
 
     constructor(
