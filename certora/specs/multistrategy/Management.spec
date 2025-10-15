@@ -1,5 +1,7 @@
 using Utils as utils;
 
+/////////////////// METHODS ///////////////////////
+
 methods {
     function debtRatio() external returns uint256 envfree;
     function getWithdrawOrder() external returns address[] envfree;
@@ -7,50 +9,53 @@ methods {
     function utils.withdrawOrderIsValid(address[]) external returns bool envfree;
     function utils.nonZeroStrategies(address[]) external returns uint256 envfree;
 
-    function _.multistrategy() external => DISPATCH(optimistic=true)[MockStrategyAdapter._];
+    function _.askReport() external => DISPATCH(optimistic=true) [AdapterHarness._];
+    function _.availableLiquidity() external => DISPATCH(optimistic=true) [AdapterHarness._];
+    function _.currentPnL() external => DISPATCH(optimistic=true) [AdapterHarness._];
+    function _.multistrategy() external => DISPATCH(optimistic=true) [AdapterHarness._];
+    function _.totalAssets() external => DISPATCH(optimistic=true) [AdapterHarness._];
+    function _.withdraw(uint256) external => DISPATCH(optimistic=true) [AdapterHarness._];
 }
+
+///////////////// DEFINITIONS /////////////////////
 
 definition canChangeWithdrawOrder(method f) returns bool = 
     f.selector == sig:addStrategy(address,uint256,uint256,uint256).selector ||
     f.selector == sig:removeStrategy(address).selector ||
     f.selector == sig:setWithdrawOrder(address[]).selector;
 
-ghost mathint sum_of_debtRatios {
-    init_state axiom sum_of_debtRatios == 0;
+definition canChangeDebtRatio(method f) returns bool =
+    f.selector == sig:addStrategy(address,uint256,uint256,uint256).selector ||
+    f.selector == sig:setStrategyDebtRatio(address,uint256).selector;
+
+///////////////// GHOSTS & HOOKS //////////////////
+
+persistent ghost mapping(address => mathint) debtRatios {
+    axiom forall address s. debtRatios[s] <= 10000;
+    init_state axiom forall address s. debtRatios[s] == 0;
 }
 
-hook Sstore strategies[KEY address s].debtRatio uint256 new_value (uint256 old_value) {
-    sum_of_debtRatios = sum_of_debtRatios + new_value - old_value;
-} 
+hook Sstore strategies[KEY address s].debtRatio uint256 new_debtRatio {
+    debtRatios[s] = new_debtRatio;
+}
 
-rule debtRatioConstantRelationship(env e, address strategy, uint256 debtRatio)
+hook Sload uint256 debtRatio strategies[KEY address s].debtRatio {
+    require(debtRatios[s] == debtRatio, "Keep the ghost hooked");
+}
+
+hook Sload uint256 activation strategies[KEY address s].activation {
+    if(activation == 0) require(debtRatios[s] == 0, "A non active strategy cannot have >0 debt ratio");
+}
+
+///////////////// PROPERTIES //////////////////////
+
+rule debtRatioConstantRelationship(env e, method f, calldataarg args) filtered {f-> canChangeDebtRatio(f)}
 { 
-    require(debtRatio() == sum_of_debtRatios, "DebtRatio start as a valid state");
+    require(debtRatio() == (usum address s. debtRatios[s]) && debtRatio() <= 10000, "DebtRatio start as a valid state");
 
-    setStrategyDebtRatio(e, strategy, debtRatio);
+    f(e,args);
 
-    assert debtRatio() == sum_of_debtRatios;
-}
-
-rule addStrategyCannotReduceDebtRatio(env e, address strategy, uint256 debtRatio, uint256 minDelta, uint256 maxDelta) 
-{
-    mathint multiDebtRatioBefore = debtRatio();
-
-    addStrategy(e, strategy, debtRatio, minDelta, maxDelta);
-
-    mathint multiDebtRatioAfter = debtRatio();
-
-    assert multiDebtRatioAfter >= multiDebtRatioBefore;
-}
-
-rule removeStrategyCannotChangeDebtRatio(env e, address strategy) {
-    mathint multiDebtRatioBefore = debtRatio();
-
-    removeStrategy(e, strategy);
-
-    mathint multiDebtRatioAfter = debtRatio();
-
-    assert multiDebtRatioAfter == multiDebtRatioBefore;
+    assert debtRatio() == (usum address s. debtRatios[s]) && debtRatio() <= 10000;
 }
 
 rule withdrawOrderStateIsValid(env e, method f, calldataarg args) filtered {f -> canChangeWithdrawOrder(f)}

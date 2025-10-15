@@ -1,8 +1,12 @@
+/////////////////// METHODS ///////////////////////
+
 methods {
     function owner() external returns address envfree;
     function manager() external returns address envfree;
     function guardians(address) external returns bool envfree;
 }
+
+///////////////// PROPERTIES //////////////////////
 
 rule onlyOwnerCanChangeOwner(env e, address newOwner) 
 {

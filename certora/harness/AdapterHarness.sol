@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { ERC20 } from "../../dependencies/@openzeppelin-contracts-5.4.0/token/ERC20/ERC20.sol";
 import { IERC20, SafeERC20 } from "../../dependencies/@openzeppelin-contracts-5.4.0/token/ERC20/utils/SafeERC20.sol";
 import { StrategyAdapter } from "../../src/abstracts/StrategyAdapter.sol";
-import { MockERC4626 } from "../../test/mocks/MockERC4626.sol";
+import { VaultHarness } from "./VaultHarness.sol";
 
-contract Adapter is StrategyAdapter {
+contract AdapterHarness is StrategyAdapter {
     using SafeERC20 for IERC20;
 
-    MockERC4626 public vault;
+    VaultHarness public vault;
 
     constructor(
         address _multistrategy
     ) 
         StrategyAdapter(_multistrategy, "Mock", "MOCK") 
     {
-        vault = new MockERC4626(asset, "Staked DAI", "sDAI", false, 0);
+        vault = new VaultHarness(ERC20(asset), "Staked DAI", "sDAI");
         _giveAllowances();
     }
 

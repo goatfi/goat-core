@@ -1,3 +1,5 @@
+/////////////////// METHODS ///////////////////////
+
 methods {
     function owner() external returns address envfree;
     function manager() external returns address envfree;
@@ -6,6 +8,8 @@ methods {
 
     function _.multistrategy() external => DISPATCH(optimistic=true)[Adapter._];
 }
+
+///////////////// DEFINITIONS /////////////////////
 
 definition userAllowed(method f) returns bool = 
     f.isView ||
@@ -16,7 +20,8 @@ definition userAllowed(method f) returns bool =
     f.selector == sig:transfer(address,uint256).selector ||
     f.selector == sig:transferFrom(address,address,uint256).selector ||
     f.selector == sig:approve(address,uint256).selector;
-
+    
+///////////////// PROPERTIES //////////////////////
 
 rule userCannotAccessPrivilegedFunctions(env e, method f, calldataarg args) filtered {f-> !userAllowed(f)}
 {
