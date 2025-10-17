@@ -1,26 +1,5 @@
-/////////////////// METHODS ///////////////////////
+import "../base/multistrategy.spec";
 
-methods {
-    function owner() external returns address envfree;
-    function manager() external returns address envfree;
-    function guardians(address) external returns bool envfree;
-    function getStrategyParameters(address) external returns MStrat.StrategyParams envfree;
-
-    function _.multistrategy() external => DISPATCH(optimistic=true)[Adapter._];
-}
-
-///////////////// DEFINITIONS /////////////////////
-
-definition userAllowed(method f) returns bool = 
-    f.isView ||
-    f.selector == sig:deposit(uint256,address).selector ||
-    f.selector == sig:mint(uint256,address).selector ||
-    f.selector == sig:withdraw(uint256,address,address).selector ||
-    f.selector == sig:redeem(uint256,address,address).selector ||
-    f.selector == sig:transfer(address,uint256).selector ||
-    f.selector == sig:transferFrom(address,address,uint256).selector ||
-    f.selector == sig:approve(address,uint256).selector;
-    
 ///////////////// PROPERTIES //////////////////////
 
 rule userCannotAccessPrivilegedFunctions(env e, method f, calldataarg args) filtered {f-> !userAllowed(f)}

@@ -1,10 +1,4 @@
-/////////////////// METHODS ///////////////////////
-
-methods {
-    function owner() external returns address envfree;
-    function guardians(address) external returns bool envfree;
-    function multistrategy() external returns address envfree;
-}
+import "../base/adapter.spec";
 
 ///////////////// PROPERTIES //////////////////////
 

@@ -1,15 +1,4 @@
-/////////////////// METHODS ///////////////////////
-
-methods {
-    function owner() external returns address envfree;
-    function guardians(address) external returns bool envfree;
-}
-
-///////////////// DEFINITIONS /////////////////////
-
-definition canChangeGuardian(method f) returns bool =
-    f.selector == sig:enableGuardian(address).selector ||
-    f.selector == sig:revokeGuardian(address).selector;
+import "../base/adapter.spec";
 
 ///////////////// PROPERTIES //////////////////////
 
