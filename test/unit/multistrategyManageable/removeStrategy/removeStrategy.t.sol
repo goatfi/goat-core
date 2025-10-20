@@ -4,13 +4,10 @@ pragma solidity ^0.8.27;
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 import { Errors } from "src/libraries/Errors.sol";
-import { MStrat } from "src/libraries/DataTypes.sol";
 import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
 
 contract RemoveStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     MockStrategyAdapter strategyOne;
-    MockStrategyAdapter strategyTwo;
-    uint8 decimals;
 
     function test_RevertWhen_CallerNotManagerOrOwner() external {
         vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
@@ -74,6 +71,10 @@ contract RemoveStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenDebtRatioIsZero
         whenStrategyHasNoDebt
     {
+        // Add two extra strategies to later verify that the order after removal is correct.
+        address m2 = address(_createAndAddAdapter(0, 0, type(uint256).max));
+        address m3 = address(_createAndAddAdapter(0, 0, type(uint256).max));
+
         // Expect the relevant event
         vm.expectEmit({ emitter: address(multistrategy)});
         emit IMultistrategyManageable.StrategyRemoved(address(strategyOne));
@@ -81,21 +82,15 @@ contract RemoveStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         // Remove the strategy from withdraw order
         vm.prank(users.manager); multistrategy.removeStrategy(address(strategyOne));
 
-        MStrat.StrategyParams memory strategyParams = multistrategy.getStrategyParameters(address(strategyOne));
-
         // Assert that the strategy has been deactivated
-        uint256 actualActivation = strategyParams.activation;
-        uint256 expectedActivation = 0;
-        assertEq(actualActivation, expectedActivation, "removeStrategy activation");
+        assertEq(multistrategy.getStrategyParameters(address(strategyOne)).lastReport, 0, "removeStrategy, last report");
+        assertEq(multistrategy.getStrategyParameters(address(strategyOne)).queuePosition, 0, "removeStrategy, queue position");
 
-        // Assert that activeStrategies has been reduced.
-        uint256 actualActiveStrategies = multistrategy.activeStrategies();
-        uint256 expectedActiveStrategies = 0;
-        assertEq(actualActiveStrategies, expectedActiveStrategies, "removeStrategy activeStrategies");
+        // Assert that activeStrategies has been removed from the queue
+        assertEq(multistrategy.activeStrategies(), 2, "removeStrategy, activeStrategies");
 
         // Assert that the strategy has been ordered
-        address actualAddressAtWithdrawOrderPos0 = multistrategy.getWithdrawOrder()[0];
-        address expectedAddressAtWithdrawOrderPos0 = address(0);
-        assertEq(actualAddressAtWithdrawOrderPos0, expectedAddressAtWithdrawOrderPos0, "removeStrategy withdraw order");
+        assertEq(multistrategy.getWithdrawOrder()[0], m2, "removeStrategy, withdraw order");
+        assertEq(multistrategy.getWithdrawOrder()[1], m3, "removeStrategy, withdraw order");
     }
 }

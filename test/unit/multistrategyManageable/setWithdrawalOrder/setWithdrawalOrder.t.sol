@@ -6,14 +6,12 @@ import { Errors } from "src/libraries/Errors.sol";
 import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
 
 contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
-
     address[] strategies;
-    uint256 debtRatio = 5_000;
-    uint256 minDebtRatio = 100 ether;
-    uint256 maxDebtRatio = 100_000 ether;
+    address m1;
+    address m2;
 
     function addMockStrategy() internal returns (address mockStrategy) {
-        mockStrategy = address(_createAndAddAdapter(debtRatio, minDebtRatio, maxDebtRatio));
+        mockStrategy = address(_createAndAddAdapter(0, 0, type(uint256).max));
     }
 
     function test_RevertWhen_CallerNotManager() external {
@@ -26,7 +24,7 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     function test_RevertWhen_LengthDoNotMatch() external whenCallerIsManager {
-        strategies = new address[](11);
+        strategies = new address[](2);
 
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
         vm.prank(users.manager);multistrategy.setWithdrawOrder(strategies);
@@ -36,101 +34,31 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    function test_RevertWhen_NumberOfActiveStrategiesDoesntMatch()
+    function test_RevertWhen_OrderHasZeroAddress()
         external
         whenCallerIsManager
-        whenLengthMatches
     {
-        addMockStrategy();
-        // Create an array with all zero strategies.
-        strategies = new address[](10);
+        //Create two strategies
+        m1 = address(_createAndAddAdapter(0, 0, type(uint256).max));
+        m2 = address(_createAndAddAdapter(0, 0, type(uint256).max));
+        
+        strategies = [address(0), m2];
 
+        // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
         vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
-    }
-
-    modifier whenNumberOfActiveStrategiesMatch {
-        _;
-    }
-
-    /// @dev If a non-zeroAddress is placed after a zero address in the withdraw order
-    /// it should revert, as that strategy wont be able to have withdraws, as the 
-    /// withdraw function exits when it reaches a zero address
-    function test_RevertWhen_ZeroAddressOrderNotRespected()
-        external
-        whenCallerIsManager
-        whenLengthMatches
-        whenNumberOfActiveStrategiesMatch
-    {
-        // Add a strategy to the multistrategy so it is present in the withdrawal order.
-        address mockStrategy = addMockStrategy();
-
-        // Create an array with an invalid order
-        strategies = [
-            address(0),   // 1
-            mockStrategy, // 2
-            address(0),   // 3
-            address(0),   // 4
-            address(0),   // 5
-            address(0),   // 6
-            address(0),   // 7
-            address(0),   // 8
-            address(0),   // 9
-            address(0)    // 10
-        ];
-
-        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
-        vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
-    }
-
-    modifier whenZeroAddressOrderIsRespected() {
-        _;
-    }
-
-    function test_SetWithdrawOrder_EmptyWithdrawOrder()
-        external
-        whenCallerIsManager
-        whenLengthMatches
-        whenNumberOfActiveStrategiesMatch
-        whenZeroAddressOrderIsRespected
-    {
-        address[] memory withdrawOrder = multistrategy.getWithdrawOrder();
-        
-        strategies = new address[](10);
-
-        vm.expectEmit({ emitter: address(multistrategy) });
-        emit IMultistrategyManageable.WithdrawOrderSet();
-
-        vm.prank(users.manager); multistrategy.setWithdrawOrder(strategies);
-
-        withdrawOrder = multistrategy.getWithdrawOrder();
-        
-        assertEq(withdrawOrder, strategies);
     }
 
     function test_RevertWhen_InactiveStrategy()
         external
         whenCallerIsManager
         whenLengthMatches
-        whenNumberOfActiveStrategiesMatch
-        whenZeroAddressOrderIsRespected
     {
-        // Create the strategy but we don't add it to the multistrategy, so it wont be active
-        address mockStrategy = address(_createAdapter());
-        
-        // Create an array with an inactive strategy
-        strategies = [
-            mockStrategy, // 1
-            address(0),   // 2
-            address(0),   // 3
-            address(0),   // 4
-            address(0),   // 5
-            address(0),   // 6
-            address(0),   // 7
-            address(0),   // 8
-            address(0),   // 9
-            address(0)    // 10
-        ];
+        // Create two strategies. Only the first one will be added.
+        m1 = address(_createAndAddAdapter(0, 0, type(uint256).max));
+        m2 = address(_createAdapter());
+
+        strategies = [m1, m2];
 
         // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
@@ -145,26 +73,14 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
         external
         whenCallerIsManager
         whenLengthMatches
-        whenNumberOfActiveStrategiesMatch
-        whenZeroAddressOrderIsRespected
         whenAllStrategiesAreActive
     {   
-        // Add a strategy to the multistrategy so it is present in the withdrawal order.
-        address mockStrategy = addMockStrategy();
+        // Add two strategies to the multistrategy so they are present in the withdrawOrder
+        m1 = address(_createAndAddAdapter(0, 0, type(uint256).max));
+        m2 = address(_createAndAddAdapter(0, 0, type(uint256).max));
         
         // Create an array with duplicate strategies
-        strategies = [
-            mockStrategy, // 1
-            mockStrategy, // 2
-            address(0),   // 3
-            address(0),   // 4
-            address(0),   // 5
-            address(0),   // 6
-            address(0),   // 7
-            address(0),   // 8
-            address(0),   // 9
-            address(0)    // 10
-        ];
+        strategies = [m1, m1];
 
         // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
@@ -179,28 +95,15 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
         external
         whenCallerIsManager
         whenLengthMatches
-        whenNumberOfActiveStrategiesMatch
-        whenZeroAddressOrderIsRespected
         whenAllStrategiesAreActive
         whenNoDuplicates
     {
         // Add two strategies to the multistrategy so they are present in the withdrawOrder
-        address mockStrategyOne = addMockStrategy();
-        address mockStrategyTwo = addMockStrategy();
+        m1 = address(_createAndAddAdapter(0, 0, type(uint256).max));
+        m2 = address(_createAndAddAdapter(0, 0, type(uint256).max));
         
         // Create a new withdraw order
-        strategies = [
-            mockStrategyTwo, // 1
-            mockStrategyOne, // 2
-            address(0),   // 3
-            address(0),   // 4
-            address(0),   // 5
-            address(0),   // 6
-            address(0),   // 7
-            address(0),   // 8
-            address(0),   // 9
-            address(0)    // 10
-        ];
+        strategies = [m2, m1];
 
         vm.expectEmit({ emitter: address(multistrategy) });
         emit IMultistrategyManageable.WithdrawOrderSet();
@@ -210,13 +113,11 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
         address[] memory withdrawOrder = multistrategy.getWithdrawOrder();
 
         // Assert the withdraw order has been set correctly
-        address actualFirstPositionStrategy = withdrawOrder[0];
-        address expectedFirstPositionStrategy = mockStrategyTwo;
-        assertEq(actualFirstPositionStrategy, expectedFirstPositionStrategy, "setWithdrawOrder");
+        assertEq(withdrawOrder[0], m2, "setWithdrawOrder, order in array");
+        assertEq(withdrawOrder[1], m1, "setWithdrawOrder, order in array");
 
-
-        address actualSecondPositionStrategy = withdrawOrder[1];
-        address expectedSecondPositionStrategy = mockStrategyOne;
-        assertEq(actualSecondPositionStrategy, expectedSecondPositionStrategy, "setWithdrawOrder");
+        // Assert the queue position in the params has been correctly set
+        assertEq(multistrategy.getStrategyParameters(m2).queuePosition, 0, "setWithdrawOrder, queue position");
+        assertEq(multistrategy.getStrategyParameters(m1).queuePosition, 1, "setWithdrawOrder, queue position");
     }
 }

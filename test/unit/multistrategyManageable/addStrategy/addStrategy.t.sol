@@ -6,7 +6,7 @@ import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.so
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Multistrategy } from "src/Multistrategy.sol";
-import { MStrat } from "src/libraries/DataTypes.sol";
+import { DataTypes } from "src/libraries/DataTypes.sol";
 import { Errors } from "src/libraries/Errors.sol";
 import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
 
@@ -26,28 +26,9 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
-    function test_RevertWhen_ActiveStrategiesAboveMaximum() 
-        external 
-        whenCallerIsOwner
-    {
-        // Deploy 10 strategies, each with 10% debt ratio
-        for (uint256 i = 0; i < 10; i++) {
-            _createAndAddAdapter(1_000, minDebtDelta, maxDebtDelta);
-        }
-        MockStrategyAdapter strategy = _createAdapter();
-
-        vm.expectRevert(abi.encodeWithSelector(Errors.MaximumAmountStrategies.selector));
-        vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
-    }
-
-    modifier whenActiveStrategiesBelowMaximum() {
-        _;
-    }
-
     function test_RevertWhen_StrategyIsZeroAddress() 
         external
         whenCallerIsOwner
-        whenActiveStrategiesBelowMaximum
     {
         address strategy = address(0);
 
@@ -62,7 +43,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_StrategyIsMultistrategyAddress()
         external
         whenCallerIsOwner
-        whenActiveStrategiesBelowMaximum
         whenNotZeroAddress
     {
         address strategy = address(multistrategy);
@@ -79,7 +59,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_StrategyIsActive() 
         external
         whenCallerIsOwner
-        whenActiveStrategiesBelowMaximum
         whenNotZeroAddress
         whenNotMultistrategyAddress
     {
@@ -102,7 +81,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_AssetDoNotMatch() 
         external
         whenCallerIsOwner
-        whenActiveStrategiesBelowMaximum
         whenNotZeroAddress
         whenNotMultistrategyAddress
         whenStrategyIsInactive
@@ -129,7 +107,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_DebtRatioSumIsAboveMax()
         external
         whenCallerIsOwner
-        whenActiveStrategiesBelowMaximum
         whenNotZeroAddress
         whenNotMultistrategyAddress
         whenStrategyIsInactive
@@ -150,7 +127,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_RevertWhen_MinDebtDeltaIsHigherThanMaxDebtDelta()
         external
         whenCallerIsOwner
-        whenActiveStrategiesBelowMaximum
         whenNotZeroAddress
         whenNotMultistrategyAddress
         whenStrategyIsInactive
@@ -173,7 +149,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     function test_AddStrategy_NewStrategy()
         external
         whenCallerIsOwner
-        whenActiveStrategiesBelowMaximum
         whenNotZeroAddress
         whenNotMultistrategyAddress
         whenStrategyIsInactive
@@ -188,11 +163,11 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
 
-        MStrat.StrategyParams memory actualStrategyParams = multistrategy.getStrategyParameters(address(strategy));
-        MStrat.StrategyParams memory expectedStrategyParams = MStrat.StrategyParams({
-            activation: block.timestamp,
+        DataTypes.StrategyParams memory actualStrategyParams = multistrategy.getStrategyParameters(address(strategy));
+        DataTypes.StrategyParams memory expectedStrategyParams = DataTypes.StrategyParams({
+            queuePosition: 0,
+            lastReport: uint32(block.timestamp),
             debtRatio: debtRatio,
-            lastReport: block.timestamp,
             minDebtDelta: minDebtDelta,
             maxDebtDelta: maxDebtDelta,
             totalDebt: 0,
@@ -206,11 +181,11 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         uint256 actualActiveStrategies = multistrategy.activeStrategies();
         uint256 expectedActiveStrategies = 1;
 
-        address actualAddressAtWithdrawOrderPos0 = multistrategy.getWithdrawOrder()[0];
-        address expectedAddressAtWithdrawOrderPos0 = address(strategy);
+        address actualAddressAtWithdrawOrder = multistrategy.withdrawOrder(0);
+        address expectedAddressAtWithdrawOrder = address(strategy);
         
         // Assert strategy params
-        assertEq(actualStrategyParams.activation, expectedStrategyParams.activation, "addStrategy Params activation");
+        assertEq(actualStrategyParams.queuePosition, expectedStrategyParams.queuePosition, "addStrategy Params queue position");
         assertEq(actualStrategyParams.debtRatio, expectedStrategyParams.debtRatio, "addStrategy Params debtRatio");
         assertEq(actualStrategyParams.lastReport, expectedStrategyParams.lastReport, "addStrategy Params last report");
         assertEq(actualStrategyParams.minDebtDelta, expectedStrategyParams.minDebtDelta, "addStrategy Params min debt delta");
@@ -226,6 +201,6 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(actualActiveStrategies, expectedActiveStrategies, "addStrategy Active strategies");
 
         // Assert that the strategy has been put in the 1st position of the withdraw order
-        assertEq(actualAddressAtWithdrawOrderPos0, expectedAddressAtWithdrawOrderPos0, "addStrategy withdraw order");
+        assertEq(actualAddressAtWithdrawOrder, expectedAddressAtWithdrawOrder, "addStrategy withdraw order");
     }
 }
