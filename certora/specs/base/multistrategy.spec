@@ -10,7 +10,7 @@ methods {
     function owner() external returns address envfree;
     function manager() external returns address envfree;
     function guardians(address) external returns bool envfree;
-    function getStrategyParameters(address) external returns MStrat.StrategyParams envfree;
+    function getStrategyParameters(address) external returns DataTypes.StrategyParams envfree;
     function debtRatio() external returns uint256 envfree;
     function totalDebt() external returns uint256 envfree;
     function getWithdrawOrder() external returns address[] envfree;

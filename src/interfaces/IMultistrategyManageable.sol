@@ -3,7 +3,7 @@
 pragma solidity 0.8.30;
 
 import { IMultistrategyAdminable } from "interfaces/IMultistrategyAdminable.sol";
-import { MStrat } from "../libraries/DataTypes.sol";
+import { DataTypes } from "../libraries/DataTypes.sol";
 
 interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @notice Emitted when the protocol fee recipient is set.
@@ -70,14 +70,14 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     function slippageLimit() external view returns (uint256);
 
     /// @notice Amount of active strategies.
-    function activeStrategies() external view returns (uint8);
+    function activeStrategies() external view returns (uint256);
 
     /// @notice Returns the withdraw order.
     function getWithdrawOrder() external view returns (address[] memory);
 
     /// @notice Returns the strategy parameters of `strategy`
     /// @param _strategy Address of the strategy the it will returns the parameters of.
-    function getStrategyParameters(address _strategy) external view returns (MStrat.StrategyParams memory);
+    function getStrategyParameters(address _strategy) external view returns (DataTypes.StrategyParams memory);
 
     /// @notice Sets the recipient address of the performance fee.
     /// @dev Emits a `SetProtocolFeeRecipient` event.
