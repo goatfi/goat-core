@@ -9,6 +9,7 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
     address[] strategies;
     address m1;
     address m2;
+    address m3;
 
     function addMockStrategy() internal returns (address mockStrategy) {
         mockStrategy = address(_createAndAddAdapter(0, 0, type(uint256).max));
@@ -56,9 +57,10 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         // Create two strategies. Only the first one will be added.
         m1 = address(_createAndAddAdapter(0, 0, type(uint256).max));
-        m2 = address(_createAdapter());
+        m2 = address(_createAndAddAdapter(0, 0, type(uint256).max));
+        m3 = address(_createAdapter());
 
-        strategies = [m1, m2];
+        strategies = [m1, m3];
 
         // Expect it to revert
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidWithdrawOrder.selector));
