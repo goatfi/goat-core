@@ -151,30 +151,6 @@ contract Exit_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
         _;
     }
 
-    function test_Exit_CallerNotOwner_WithWithdrawProcess()
-        external
-        whenReceiverNotZeroAddress
-        whenReceiverNotMultistrategy
-        whenSharesNotZero
-        whenCallerNotOwner
-        whenEnoughAllowance
-        whenMultistrategyBalanceLowerThanAssets
-        whenEnoughLiquidity
-    {
-        uint256 shares = multistrategy.previewWithdraw(withdrawAmount);
-        uint256 ownerSharesBefore = multistrategy.balanceOf(owner);
-
-        vm.expectEmit(address(multistrategy));
-        emit IERC4626.Withdraw(users.alice, receiver, owner, withdrawAmount, shares);
-
-        multistrategy.exit(users.alice, receiver, owner, withdrawAmount, shares);
-
-        assertEq(multistrategy.balanceOf(owner), ownerSharesBefore - shares, "Shares burned");
-        assertEq(dai.balanceOf(receiver), withdrawAmount, "Assets transferred to receiver");
-        assertEq(dai.balanceOf(address(multistrategy)), 0, "Assets adjusted");
-    }
-
-    // Now for when caller is the owner
     modifier whenCallerIsTheOwner() {
         _;
     }
@@ -217,14 +193,156 @@ contract Exit_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
         multistrategy.exit(owner, receiver, owner, assets, shares);
     }
 
-    function test_Exit_CallerIsOwner_WithWithdrawProcess()
+    modifier whenStrategyHasNoAssetsToWithdraw() {
+        // Create a strategy with no debt (so assetsToWithdraw will be 0)
+        strategyOne = _createAndAddAdapter(5000, 0, type(uint256).max);
+        strategyTwo = _createAndAddAdapter(5000, 0, type(uint256).max);
+        // Don't request credit for strategyOne, so it has no debt
+        vm.prank(users.manager); strategyTwo.requestCredit();
+        _;
+    }
+
+    function test_Exit_CallerNotOwner_WithdrawProcess_WithTotalDebtSkip()
+        external
+        whenReceiverNotZeroAddress
+        whenReceiverNotMultistrategy
+        whenSharesNotZero
+        whenCallerNotOwner
+        whenEnoughAllowance
+        whenStrategyHasNoAssetsToWithdraw
+    {
+        // StrategyOne has no debt, so assetsToWithdraw = 0, should continue to strategyTwo
+        uint256 shares = multistrategy.previewWithdraw(withdrawAmount);
+        uint256 ownerSharesBefore = multistrategy.balanceOf(owner);
+
+        vm.expectEmit(address(multistrategy));
+        emit IERC4626.Withdraw(users.alice, receiver, owner, withdrawAmount, shares);
+
+        multistrategy.exit(users.alice, receiver, owner, withdrawAmount, shares);
+
+        assertEq(multistrategy.balanceOf(owner), ownerSharesBefore - shares, "Shares burned");
+        assertEq(dai.balanceOf(receiver), withdrawAmount, "Assets transferred to receiver");
+    }
+
+    function test_Exit_CallerNotOwner_WithdrawProcess_WithLiquiditySkip()
+        external
+        whenReceiverNotZeroAddress
+        whenReceiverNotMultistrategy
+        whenSharesNotZero
+        whenCallerNotOwner
+        whenEnoughAllowance
+        whenStrategyWithdrawsInsufficient
+    {
+        // StrategyOne will withdraw partial amount, strategyTwo should complete the withdrawal
+        // 400 ether where borrowed, so we can withraw up to the max withdarwable amount.
+        withdrawAmount = multistrategy.maxWithdraw(owner);
+        uint256 shares = multistrategy.previewWithdraw(withdrawAmount);
+        uint256 ownerSharesBefore = multistrategy.balanceOf(owner);
+
+        vm.expectEmit(address(multistrategy));
+        emit IERC4626.Withdraw(users.alice, receiver, owner, withdrawAmount, shares);
+
+        multistrategy.exit(users.alice, receiver, owner, withdrawAmount, shares);
+
+        assertEq(multistrategy.balanceOf(owner), ownerSharesBefore - shares, "Shares burned");
+        assertEq(dai.balanceOf(receiver), withdrawAmount, "Assets transferred to receiver");
+    }
+
+    function test_Exit_CallerNotOwner_Withdraw()
+        external
+        whenReceiverNotZeroAddress
+        whenReceiverNotMultistrategy
+        whenSharesNotZero
+        whenCallerNotOwner
+        whenEnoughAllowance
+        whenStrategyWithdrawsSufficient
+    {
+        // StrategyOne should have enough liquidity to complete the withdrawal
+        uint256 shares = multistrategy.previewWithdraw(withdrawAmount);
+        uint256 ownerSharesBefore = multistrategy.balanceOf(owner);
+
+        vm.expectEmit(address(multistrategy));
+        emit IERC4626.Withdraw(users.alice, receiver, owner, withdrawAmount, shares);
+
+        multistrategy.exit(users.alice, receiver, owner, withdrawAmount, shares);
+
+        assertEq(multistrategy.balanceOf(owner), ownerSharesBefore - shares, "Shares burned");
+        assertEq(dai.balanceOf(receiver), withdrawAmount, "Assets transferred to receiver");
+    }
+
+    function test_Exit_CallerIsOwner_WithdrawProcess_WithTotalDebtSkip()
         external
         whenReceiverNotZeroAddress
         whenReceiverNotMultistrategy
         whenSharesNotZero
         whenCallerIsTheOwner
-        whenMultistrategyBalanceLowerThanAssets
-        whenEnoughLiquidity
+        whenStrategyHasNoAssetsToWithdraw
+    {
+        // StrategyOne has no debt, so assetsToWithdraw = 0, should continue to strategyTwo
+        uint256 shares = multistrategy.previewWithdraw(withdrawAmount);
+        uint256 ownerSharesBefore = multistrategy.balanceOf(owner);
+
+        vm.expectEmit(address(multistrategy));
+        emit IERC4626.Withdraw(owner, receiver, owner, withdrawAmount, shares);
+
+        multistrategy.exit(owner, receiver, owner, withdrawAmount, shares);
+
+        assertEq(multistrategy.balanceOf(owner), ownerSharesBefore - shares, "Shares burned");
+        assertEq(dai.balanceOf(receiver), withdrawAmount, "Assets transferred to receiver");
+    }
+
+    modifier whenStrategyWithdrawsInsufficient() {
+        strategyOne = _createAndAddAdapter(5000, 0, type(uint256).max);
+        strategyTwo = _createAndAddAdapter(5000, 0, type(uint256).max);
+
+        vm.prank(users.manager); strategyOne.requestCredit();
+        vm.prank(users.manager); strategyTwo.requestCredit();
+
+        // Reduce liquidity in strategyOne so it has insufficient for its share
+        // Each strategy gets 500 ether, so borrow 400 ether leaving only 100 ether
+        strategyOne.vault().borrow(400 ether);
+        _;
+    }
+
+    function test_Exit_CallerIsOwner_WithdrawProcess_WithLiquiditySkip()
+        external
+        whenReceiverNotZeroAddress
+        whenReceiverNotMultistrategy
+        whenSharesNotZero
+        whenCallerIsTheOwner
+        whenStrategyWithdrawsInsufficient
+    {
+        // StrategyOne will withdraw partial amount, strategyTwo should complete the withdrawal
+        // 400 ether where borrowed, so we can withraw up to the max withdarwable amount.
+        withdrawAmount = multistrategy.maxWithdraw(owner);
+        uint256 shares = multistrategy.previewWithdraw(withdrawAmount);
+        uint256 ownerSharesBefore = multistrategy.balanceOf(owner);
+
+        vm.expectEmit(address(multistrategy));
+        emit IERC4626.Withdraw(owner, receiver, owner, withdrawAmount, shares);
+
+        multistrategy.exit(owner, receiver, owner, withdrawAmount, shares);
+
+        assertEq(multistrategy.balanceOf(owner), ownerSharesBefore - shares, "Shares burned");
+        assertEq(dai.balanceOf(receiver), withdrawAmount, "Assets transferred to receiver");
+    }
+
+    modifier whenStrategyWithdrawsSufficient() {
+        strategyOne = _createAndAddAdapter(5000, 0, type(uint256).max);
+        strategyTwo = _createAndAddAdapter(5000, 0, type(uint256).max);
+
+        vm.prank(users.manager); strategyOne.requestCredit();
+        vm.prank(users.manager); strategyTwo.requestCredit();
+        _;
+    }
+
+    function test_Exit_CallerIsOwner_Withdraw()
+        external
+        whenReceiverNotZeroAddress
+        whenReceiverNotMultistrategy
+        whenSharesNotZero
+        whenCallerIsTheOwner
+        whenStrategyWithdrawsSufficient
     {
         uint256 shares = multistrategy.previewWithdraw(withdrawAmount);
         uint256 ownerSharesBefore = multistrategy.balanceOf(owner);
@@ -236,6 +354,5 @@ contract Exit_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
 
         assertEq(multistrategy.balanceOf(owner), ownerSharesBefore - shares, "Shares burned");
         assertEq(dai.balanceOf(receiver), withdrawAmount, "Assets transferred to receiver");
-        assertEq(dai.balanceOf(address(multistrategy)), 0, "Assets deducted from multistrategy");
     }
 }

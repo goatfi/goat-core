@@ -313,8 +313,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
 
         for(uint256 i = 0; i < nStrategies; ++i){
             address strategy = withdrawOrder[i];
-            if(strategies[strategy].totalDebt == 0) continue;
-
             (uint256 gain, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
             totalProfit += gain.mulDiv(Constants.MAX_BPS - performanceFee, Constants.MAX_BPS);
             totalLoss += loss;
