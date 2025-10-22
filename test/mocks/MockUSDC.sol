@@ -9,4 +9,7 @@ contract MockUSDC is MockERC20 {
     function decimals() public pure override returns (uint8) {
         return 6;
     }
+
+    /// @dev Needed for the Test Coverage to ignore it.
+    function testA() override public {}
 }

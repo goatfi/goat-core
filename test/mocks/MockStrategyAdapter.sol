@@ -64,10 +64,10 @@ contract MockStrategyAdapter is StrategyAdapterHarness {
         require(!(surplus > 0 && slippage > 0), "Surplus and slippage cannot both be positive");
         vault.withdraw(_amount, address(this), address(this));
         if(surplus > 0) {
-            uint256 earnedAmount = Math.mulDiv(_amount, surplus, Constants.MAX_SLIPPAGE);
+            uint256 earnedAmount = Math.mulDiv(_amount, surplus, Constants.MAX_BPS);
             IMockERC20(asset).mint(address(this), earnedAmount);
         } else {
-            uint256 lostAmount = Math.mulDiv(_amount, slippage, Constants.MAX_SLIPPAGE);
+            uint256 lostAmount = Math.mulDiv(_amount, slippage, Constants.MAX_BPS);
             IERC20(asset).safeTransfer(address(42069), lostAmount);
         }
     }

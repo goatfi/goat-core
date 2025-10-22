@@ -17,9 +17,14 @@ exit.t.sol
             │       │   ├── it should transfer the amount of assets to the receiver
             │       │   └── it should emit a Withdraw event
             │       └── when the balance of the Multistrategy is lower than the amount of assets to exit
-            │           ├── when the assets withdrawn from the Adapters are lower than the amount of assets
-            │           │   └── it should revert with InsufficientBalance error
-            │           └── when the assets withdrawn from the Adapters is higher or equal than the amount of assets
+            │           ├── when a strategy has assetsToWithdraw equal to 0
+            │           │   └── it should continue to the next strategy
+            │           ├── when a strategy withdraws insufficient assets
+            │           │   ├── when more strategies are available
+            │           │   │   └── it should continue to the next strategy
+            │           │   └── when no more strategies are available
+            │           │       └── it should revert with InsufficientBalance error
+            │           └── when a strategy withdraws sufficient assets
             │               ├── it should burn the amount of shares from owner
             │               ├── it should transfer the amount of assets to the receiver
             │               └── it should emit a Withdraw event
@@ -29,9 +34,14 @@ exit.t.sol
                 │   ├── it should transfer the amount of assets to the receiver
                 │   └── it should emit a Withdraw event
                 └── when the balance of the Multistrategy is lower than the amount of assets to exit
-                    ├── when the assets withdrawn from the Adapters are lower than the amount of assets
-                    │   └── it should revert with InsufficientBalance error
-                    └── when the assets withdrawn from the Adapters is higher or equal than the amount of assets
+                    ├── when a strategy has assetsToWithdraw equal to 0
+                    │   └── it should continue to the next strategy
+                    ├── when a strategy withdraws insufficient assets
+                    │   ├── when more strategies are available
+                    │   │   └── it should continue to the next strategy
+                    │   └── when no more strategies are available
+                    │       └── it should revert with InsufficientBalance error
+                    └── when a strategy withdraws sufficient assets
                         ├── it should burn the amount of shares from owner
                         ├── it should transfer the amount of assets to the receiver
                         └── it should emit a Withdraw event

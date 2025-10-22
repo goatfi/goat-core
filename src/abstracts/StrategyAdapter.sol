@@ -87,7 +87,7 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
 
     /// @inheritdoc IStrategyAdapter
     function setSlippageLimit(uint256 _slippageLimit) external onlyOwner {
-        require(_slippageLimit <= Constants.MAX_SLIPPAGE, Errors.SlippageLimitExceeded(_slippageLimit));
+        require(_slippageLimit <= Constants.MAX_BPS, Errors.SlippageLimitExceeded(_slippageLimit));
         
         slippageLimit = _slippageLimit;
 
@@ -108,8 +108,7 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     function sendReportPanicked() external onlyOwner whenPaused {
         uint256 currentAssets = _balance();
         (uint256 gain, uint256 loss) = _calculateGainAndLoss(currentAssets);
-        uint256 availableForRepay = currentAssets - gain;
-        IMultistrategy(multistrategy).strategyReport(availableForRepay, gain, loss);
+        IMultistrategy(multistrategy).strategyReport(currentAssets - gain, gain, loss);
     }
 
     /// @inheritdoc IStrategyAdapter
@@ -185,12 +184,8 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
 
         _tryWithdraw(toBeWithdrawn);
         (gain, loss) = _calculateGainAndLoss(_totalAssets());
-        uint256 currentBalance = _balance();
-        if(currentBalance > gain) {
-            IMultistrategy(multistrategy).strategyReport(currentBalance - gain, gain, loss);
-        } else {
-            IMultistrategy(multistrategy).strategyReport(0, currentBalance, loss);
-        }
+
+        IMultistrategy(multistrategy).strategyReport(_balance() - gain, gain, loss);
     }
 
     /// @notice Attempts to withdraw a specified amount from the strategy.
@@ -202,7 +197,7 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
         _withdraw(_amount - _balance());
 
         uint256 currentBalance = _balance();
-        uint256 desiredBalance = _amount.mulDiv(Constants.MAX_SLIPPAGE - slippageLimit, Constants.MAX_SLIPPAGE);
+        uint256 desiredBalance = _amount.mulDiv(Constants.MAX_BPS - slippageLimit, Constants.MAX_BPS);
         
         require(currentBalance >= desiredBalance, Errors.SlippageCheckFailed(desiredBalance, currentBalance));
     }

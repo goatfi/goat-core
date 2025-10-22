@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 
 import { IERC20, IERC4626, ERC20, ERC4626 } from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import { ReentrancyGuard } from "@openzeppelin/utils/ReentrancyGuard.sol";
+import { SafeCast } from "@openzeppelin/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
@@ -15,6 +16,7 @@ import { Errors } from "./libraries/Errors.sol";
 
 contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using SafeCast for uint256;
     using Math for uint256;
 
     /// @notice OpenZeppelin decimals offset used by the ERC4626 implementation.
@@ -52,7 +54,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         ERC4626(IERC20(_asset))
         ERC20(_name, _symbol)
     {   
-        DECIMALS_OFFSET = uint8(Math.max(0, uint256(18) - IERC20Metadata(_asset).decimals()));
+        DECIMALS_OFFSET = (Math.max(0, 18 - IERC20Metadata(_asset).decimals())).toUint8();
         performanceFee = 1000;
         lastReport = block.timestamp;
         LOCKED_PROFIT_DEGRADATION = 1 ether / Constants.PROFIT_UNLOCK_TIME;
@@ -306,12 +308,11 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @return totalProfit The total profit across all active strategies, after deducting the performance fee.
     /// @return totalLoss The total loss across all active strategies.
     function _currentPnL() internal view returns (uint256 totalProfit, uint256 totalLoss) {
-        if (activeStrategies == 0) return (0, 0);
+        uint256 nStrategies = withdrawOrder.length;
+        if (nStrategies == 0) return (0, 0);
 
-        for(uint8 i = 0; i < activeStrategies; ++i){
+        for(uint256 i = 0; i < nStrategies; ++i){
             address strategy = withdrawOrder[i];
-            if(strategies[strategy].totalDebt == 0) continue;
-
             (uint256 gain, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
             totalProfit += gain.mulDiv(Constants.MAX_BPS - performanceFee, Constants.MAX_BPS);
             totalLoss += loss;
@@ -334,7 +335,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @return liquidity The amount of liquidity that is available
     function _availableLiquidity() internal view returns (uint256 liquidity) {
         liquidity = _balance();
-        for(uint256 i = 0; i < activeStrategies; ++i) {
+        uint256 nStrategies = withdrawOrder.length;
+        for(uint256 i = 0; i < nStrategies; ++i) {
             uint256 strategyTotalAssets = IStrategyAdapter(withdrawOrder[i]).totalAssets();
             uint256 strategyAvailableLiquidity = IStrategyAdapter(withdrawOrder[i]).availableLiquidity();
             liquidity += Math.min(strategyTotalAssets, strategyAvailableLiquidity);
@@ -386,7 +388,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
 
         if (_caller != _owner) _spendAllowance(_owner, _caller, _shares);
         if (_assets > _balance()) {
-            for(uint8 i = 0; i < activeStrategies; ++i){
+            uint256 nStrategies = withdrawOrder.length;
+            for(uint256 i = 0; i < nStrategies; ++i){
                 address strategy = withdrawOrder[i];
                 uint256 assetsToWithdraw = (_assets - _balance())
                                                 .min(strategies[strategy].totalDebt)
@@ -447,7 +450,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 newLockedProfit = _calculateLockedProfit() + profit;
         lockedProfit = newLockedProfit > _loss ? newLockedProfit - _loss : 0;
 
-        strategies[msg.sender].lastReport = block.timestamp;
+        strategies[msg.sender].lastReport = block.timestamp.toUint32();
         lastReport = block.timestamp;
 
         if(debtToRepay + _gain > 0) IERC20(asset()).safeTransferFrom(msg.sender, address(this), debtToRepay + _gain);
@@ -459,7 +462,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @notice Loops through the active strategies and settles any unrealized loss.
     /// @dev To be executed before any withdraw or redeem. Adds loss front-running protection
     function _settleUnrealizedLosses() internal {
-        for(uint8 i = 0; i < activeStrategies; ++i){
+        uint256 nStrategies = withdrawOrder.length;
+        for(uint256 i = 0; i < nStrategies; ++i){
             address strategy = withdrawOrder[i];
             if(strategies[strategy].totalDebt == 0) continue;
             
