@@ -119,7 +119,7 @@ contract SetWithdrawOrder_Integration_Concrete_Test is Multistrategy_Base_Test {
         assertEq(withdrawOrder[1], m1, "setWithdrawOrder, order in array");
 
         // Assert the queue position in the params has been correctly set
-        assertEq(multistrategy.getStrategyParameters(m2).queuePosition, 0, "setWithdrawOrder, queue position");
-        assertEq(multistrategy.getStrategyParameters(m1).queuePosition, 1, "setWithdrawOrder, queue position");
+        assertEq(multistrategy.getStrategyParameters(m2).queueIndex, 0, "setWithdrawOrder, queue position");
+        assertEq(multistrategy.getStrategyParameters(m1).queueIndex, 1, "setWithdrawOrder, queue position");
     }
 }

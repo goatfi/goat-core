@@ -84,7 +84,7 @@ contract RemoveStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         // Assert that the strategy has been deactivated
         assertEq(multistrategy.getStrategyParameters(address(strategyOne)).lastReport, 0, "removeStrategy, last report");
-        assertEq(multistrategy.getStrategyParameters(address(strategyOne)).queuePosition, 0, "removeStrategy, queue position");
+        assertEq(multistrategy.getStrategyParameters(address(strategyOne)).queueIndex, 0, "removeStrategy, queue position");
 
         // Assert that activeStrategies has been removed from the queue
         assertEq(multistrategy.activeStrategies(), 2, "removeStrategy, activeStrategies");

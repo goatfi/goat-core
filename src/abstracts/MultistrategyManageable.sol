@@ -132,7 +132,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         
         uint256 nStrategies = _strategies.length;
         for(uint256 i = 0; i < nStrategies; ++i) {
-            strategies[_strategies[i]].queuePosition = i.toUint8();
+            strategies[_strategies[i]].queueIndex = i.toUint8();
         }
         withdrawOrder = _strategies;
         emit WithdrawOrderSet();
@@ -152,7 +152,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         require(_minDebtDelta <= _maxDebtDelta, Errors.InvalidDebtDelta());
 
         strategies[_strategy] = DataTypes.StrategyParams({
-            queuePosition: withdrawOrder.length.toUint8(),
+            queueIndex: withdrawOrder.length.toUint8(),
             lastReport: block.timestamp.toUint32(),
             debtRatio: _debtRatio,
             minDebtDelta: _minDebtDelta,
@@ -173,11 +173,11 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         require(strategies[_strategy].debtRatio == 0, Errors.StrategyWithActiveDebtRatio());
         require(strategies[_strategy].totalDebt == 0, Errors.StrategyWithActiveDebt());
 
-        uint256 startingIndex = strategies[_strategy].queuePosition;
+        uint256 startingIndex = strategies[_strategy].queueIndex;
         uint256 nStrategies = withdrawOrder.length -1;
         for(uint256 i = startingIndex; i < nStrategies; ++i) {
             withdrawOrder[i] = withdrawOrder[i+1];
-            strategies[withdrawOrder[i]].queuePosition = i.toUint8();
+            strategies[withdrawOrder[i]].queueIndex = i.toUint8();
         }
 
         delete strategies[_strategy];

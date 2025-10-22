@@ -165,7 +165,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         DataTypes.StrategyParams memory actualStrategyParams = multistrategy.getStrategyParameters(address(strategy));
         DataTypes.StrategyParams memory expectedStrategyParams = DataTypes.StrategyParams({
-            queuePosition: 0,
+            queueIndex: 0,
             lastReport: uint32(block.timestamp),
             debtRatio: debtRatio,
             minDebtDelta: minDebtDelta,
@@ -185,7 +185,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         address expectedAddressAtWithdrawOrder = address(strategy);
         
         // Assert strategy params
-        assertEq(actualStrategyParams.queuePosition, expectedStrategyParams.queuePosition, "addStrategy Params queue position");
+        assertEq(actualStrategyParams.queueIndex, expectedStrategyParams.queueIndex, "addStrategy Params queue position");
         assertEq(actualStrategyParams.debtRatio, expectedStrategyParams.debtRatio, "addStrategy Params debtRatio");
         assertEq(actualStrategyParams.lastReport, expectedStrategyParams.lastReport, "addStrategy Params last report");
         assertEq(actualStrategyParams.minDebtDelta, expectedStrategyParams.minDebtDelta, "addStrategy Params min debt delta");
