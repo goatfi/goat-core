@@ -1,4 +1,4 @@
-import "../base/adapter.spec";
+import "../setup/complete_setup.spec";
 
 ///////////////// PROPERTIES //////////////////////
 
@@ -12,4 +12,27 @@ rule userCannotHaveAccess(env e, method f, calldataarg args) filtered {f-> !f.is
 
     f@withrevert(e, args);
     assert lastReverted;
+}
+
+rule totalDebtCanOnlyIncreaseWithRequestCredit(env e, method f, calldataarg args) filtered {f-> !userAllowed(f)}
+{
+    mathint previousDebt = adapter.totalDebt();
+    f(e,args);
+    mathint currentDebt = adapter.totalDebt();
+
+    assert currentDebt < previousDebt => 
+                                        f.selector == sig:sendReport(uint256).selector ||
+                                        f.selector == sig:askReport().selector ||
+                                        f.selector == sig:sendReportPanicked().selector;
+}
+
+rule totalDebtCanOnlyDecreaseWithSendReport(env e, method f, calldataarg args) filtered {f-> !userAllowed(f)} 
+{
+    mathint previousDebt = adapter.totalDebt();
+
+    f(e,args);
+
+    mathint currentDebt = adapter.totalDebt();
+
+    assert currentDebt > previousDebt => f.selector == sig:requestCredit().selector;
 }

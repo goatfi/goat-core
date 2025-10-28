@@ -295,8 +295,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     ) internal view {
         if (_expectedAssets == 0 || _expectedShares == 0) return;
         
-        uint256 expectedExchangeRate = _expectedAssets.mulDiv(1 ether, _expectedShares);
-        uint256 actualExchangeRate = _actualAssets.mulDiv(1 ether, _actualShares);
+        uint256 expectedExchangeRate = _expectedAssets.mulDiv(10**36, _expectedShares);
+        uint256 actualExchangeRate = _actualAssets.mulDiv(10**36, _actualShares);
         uint256 slippage = 
             expectedExchangeRate > actualExchangeRate ? 
             (expectedExchangeRate - actualExchangeRate).mulDiv(Constants.MAX_BPS, expectedExchangeRate)

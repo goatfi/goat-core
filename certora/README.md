@@ -14,3 +14,15 @@ Link to the docs: https://docs.certora.com/en/latest/index.html
 Use the configuration files `.conf` to verify the specifications.
 
 `$ certoraRun certora/conf/adapter/OwnerSafety.conf`
+
+# High Level Properties (HLP)
+
+### Preview Correctness
+
+These high level properites prove that the return values of the preview functions are consistent with the
+execution of the Deposit/Mint/Withdraw/Redeem functions.
+
+- HLP_PreviewDepositCorrectness()
+- HLP_HLP_PreviewMintCorrectness()
+- HLP_PreviewWithdrawCorrectness()
+- HLP_PreviewRedeemCorrectness()

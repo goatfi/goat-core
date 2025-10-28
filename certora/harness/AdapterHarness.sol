@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { ERC20 } from "../../dependencies/@openzeppelin-contracts-5.4.0/token/ERC20/ERC20.sol";
 import { IERC20, SafeERC20 } from "../../dependencies/@openzeppelin-contracts-5.4.0/token/ERC20/utils/SafeERC20.sol";
+import { IMultistrategy } from "../../src/Multistrategy.sol";
 import { StrategyAdapter } from "../../src/abstracts/StrategyAdapter.sol";
 import { VaultHarness } from "./VaultHarness.sol";
 
@@ -49,5 +50,19 @@ contract AdapterHarness is StrategyAdapter {
 
     function _availableLiquidity() internal override view returns(uint256) {
         return IERC20(asset).balanceOf(address(vault));
+    }
+
+    function totalDebt() external view returns(uint256) {
+        return IMultistrategy(multistrategy).strategyTotalDebt(address(this));
+    }
+
+    function currentGain() external view returns(uint256) {
+        (uint256 gain,) = _calculateGainAndLoss(_totalAssets());
+        return gain;
+    }
+
+    function currentLoss() external view returns(uint256) {
+        (,uint256 loss) = _calculateGainAndLoss(_totalAssets());
+        return loss;
     }
 }
