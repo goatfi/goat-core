@@ -84,15 +84,29 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @inheritdoc IERC4626
     /// @dev Limited by the liquidity available
     function maxWithdraw(address _owner) public view override returns (uint256) {
-        uint256 maxAssets = _convertToAssets(balanceOf(_owner), Math.Rounding.Floor);
+        uint256 maxAssets = previewRedeem(balanceOf(_owner));
         return Math.min(maxAssets, _availableLiquidity());
     }
 
     /// @inheritdoc IERC4626
     /// @dev Limited by the liquidity available
     function maxRedeem(address _owner) public view override returns (uint256) {
-        uint256 maxShares = _convertToShares(_availableLiquidity(), Math.Rounding.Floor);
+        uint256 maxShares = previewWithdraw(_availableLiquidity());
         return Math.min(balanceOf(_owner), maxShares);
+    }
+
+    /// @inheritdoc IERC4626
+    /// @dev Pessimistic, returns the amount of shares at max slippage.
+    function previewWithdraw(uint256 assets) public view override returns (uint256) {
+        uint256 baseShares = _convertToShares(assets, Math.Rounding.Ceil);
+        return baseShares.mulDiv(Constants.MAX_BPS, Constants.MAX_BPS - slippageLimit, Math.Rounding.Ceil);
+    }
+
+    /// @inheritdoc IERC4626
+    /// @dev Pessimistic, returns the amount of assets at max slippage.
+    function previewRedeem(uint256 shares) public view override returns (uint256) {
+        uint256 baseAssets = _convertToAssets(shares, Math.Rounding.Floor);
+        return baseAssets.mulDiv(Constants.MAX_BPS - slippageLimit, Constants.MAX_BPS, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IMultistrategy
@@ -151,9 +165,9 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 maxAssets = maxWithdraw(_owner);
         require(_assets <= maxAssets, ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets));
 
-        uint256 desiredShares = previewWithdraw(_assets);
+        uint256 desiredShares = _convertToShares(_assets, Math.Rounding.Ceil);
         _settleUnrealizedLosses();
-        uint256 shares = previewWithdraw(_assets);
+        uint256 shares = _convertToShares(_assets, Math.Rounding.Ceil);
 
         _checkSlippage(_assets, _assets, desiredShares, shares);
         _exit(msg.sender, _receiver, _owner, _assets, shares);
@@ -166,9 +180,9 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 maxShares = maxRedeem(_owner);
         require(_shares <= maxShares, ERC4626ExceededMaxRedeem(_owner, _shares, maxShares));
 
-        uint256 desiredAssets = previewRedeem(_shares);
+        uint256 desiredAssets = _convertToAssets(_shares, Math.Rounding.Floor);
         _settleUnrealizedLosses();
-        uint256 assets = previewRedeem(_shares);
+        uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
 
         _checkSlippage(desiredAssets, assets, _shares, _shares);
         _exit(msg.sender, _receiver, _owner, assets, _shares);
