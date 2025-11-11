@@ -1,4 +1,8 @@
+![Core](https://apricot-many-flamingo-613.mypinata.cloud/ipfs/bafkreien2vagdlnouzxop3r72f5ridnuy67scxtdkgwpxh6hsmqitoknc4)
 # Goat Core Contracts
+
+This repository contains the the codebase for the core infrastructure of Goat Multistrategy contracts, built with Foundry. <br>
+It also contains the spec and configuration files used to formaly verify the codebase with Certora.
 
 ### Installing Certora
 
