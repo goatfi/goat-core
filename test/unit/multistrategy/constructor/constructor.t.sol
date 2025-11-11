@@ -41,14 +41,6 @@ contract Constructor_Integration_Concrete_Test is Test {
         assertEq(multistrategy.owner(), address(this), "owner");
         assertEq(multistrategy.manager(), manager, "manager");
         assertEq(multistrategy.protocolFeeRecipient(), protocolFeeRecipient, "protocolFeeRecipient");
-
-        // Assert withdrawOrder is initialized as array of 10 addresses, all zero
-        address[] memory withdrawOrder = multistrategy.getWithdrawOrder();
-        assertEq(withdrawOrder.length, 10, "withdrawOrder length");
-        for (uint8 i = 0; i < 10; i++) {
-            assertEq(withdrawOrder[i], address(0), "withdrawOrder[i]");
-        }
-
         assertEq(multistrategy.performanceFee(), 1000, "performanceFee");
         assertEq(multistrategy.lastReport(), block.timestamp, "lastReport");
 

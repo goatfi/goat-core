@@ -4,20 +4,20 @@ pragma solidity 0.8.30;
 
 import { IERC20, IERC4626, ERC20, ERC4626 } from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import { ReentrancyGuard } from "@openzeppelin/utils/ReentrancyGuard.sol";
+import { SafeCast } from "@openzeppelin/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { MultistrategyManageable } from "src/abstracts/MultistrategyManageable.sol";
 import { IMultistrategy } from "interfaces/IMultistrategy.sol";
 import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
+import { Constants } from "./libraries/Constants.sol";
 import { Errors } from "./libraries/Errors.sol";
 
 contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using SafeCast for uint256;
     using Math for uint256;
-    
-    /// @notice How much time it takes for the profit of a strategy to be unlocked.
-    uint256 public constant PROFIT_UNLOCK_TIME = 3 days;
 
     /// @notice OpenZeppelin decimals offset used by the ERC4626 implementation.
     /// @dev Calculated to be max(0, 18 - underlyingDecimals) at construction, so the initial conversion rate maximizes
@@ -54,10 +54,10 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         ERC4626(IERC20(_asset))
         ERC20(_name, _symbol)
     {   
-        DECIMALS_OFFSET = uint8(Math.max(0, uint256(18) - IERC20Metadata(_asset).decimals()));
+        DECIMALS_OFFSET = (Math.max(0, 18 - IERC20Metadata(_asset).decimals())).toUint8();
         performanceFee = 1000;
         lastReport = block.timestamp;
-        LOCKED_PROFIT_DEGRADATION = 1 ether / PROFIT_UNLOCK_TIME;
+        LOCKED_PROFIT_DEGRADATION = 1 ether / Constants.PROFIT_UNLOCK_TIME;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -84,15 +84,29 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @inheritdoc IERC4626
     /// @dev Limited by the liquidity available
     function maxWithdraw(address _owner) public view override returns (uint256) {
-        uint256 maxAssets = _convertToAssets(balanceOf(_owner), Math.Rounding.Floor);
+        uint256 maxAssets = previewRedeem(balanceOf(_owner));
         return Math.min(maxAssets, _availableLiquidity());
     }
 
     /// @inheritdoc IERC4626
     /// @dev Limited by the liquidity available
     function maxRedeem(address _owner) public view override returns (uint256) {
-        uint256 maxShares = _convertToShares(_availableLiquidity(), Math.Rounding.Floor);
+        uint256 maxShares = previewWithdraw(_availableLiquidity());
         return Math.min(balanceOf(_owner), maxShares);
+    }
+
+    /// @inheritdoc IERC4626
+    /// @dev Pessimistic, returns the amount of shares at max slippage.
+    function previewWithdraw(uint256 assets) public view override returns (uint256) {
+        uint256 baseShares = _convertToShares(assets, Math.Rounding.Ceil);
+        return baseShares.mulDiv(Constants.MAX_BPS, Constants.MAX_BPS - slippageLimit, Math.Rounding.Ceil);
+    }
+
+    /// @inheritdoc IERC4626
+    /// @dev Pessimistic, returns the amount of assets at max slippage.
+    function previewRedeem(uint256 shares) public view override returns (uint256) {
+        uint256 baseAssets = _convertToAssets(shares, Math.Rounding.Floor);
+        return baseAssets.mulDiv(Constants.MAX_BPS - slippageLimit, Constants.MAX_BPS, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IMultistrategy
@@ -151,9 +165,9 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 maxAssets = maxWithdraw(_owner);
         require(_assets <= maxAssets, ERC4626ExceededMaxWithdraw(_owner, _assets, maxAssets));
 
-        uint256 desiredShares = previewWithdraw(_assets);
+        uint256 desiredShares = _convertToShares(_assets, Math.Rounding.Ceil);
         _settleUnrealizedLosses();
-        uint256 shares = previewWithdraw(_assets);
+        uint256 shares = _convertToShares(_assets, Math.Rounding.Ceil);
 
         _checkSlippage(_assets, _assets, desiredShares, shares);
         _exit(msg.sender, _receiver, _owner, _assets, shares);
@@ -166,9 +180,9 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 maxShares = maxRedeem(_owner);
         require(_shares <= maxShares, ERC4626ExceededMaxRedeem(_owner, _shares, maxShares));
 
-        uint256 desiredAssets = previewRedeem(_shares);
+        uint256 desiredAssets = _convertToAssets(_shares, Math.Rounding.Floor);
         _settleUnrealizedLosses();
-        uint256 assets = previewRedeem(_shares);
+        uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
 
         _checkSlippage(desiredAssets, assets, _shares, _shares);
         _exit(msg.sender, _receiver, _owner, assets, _shares);
@@ -221,10 +235,10 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @return The amount of credit available for the given strategy.
     function _creditAvailable(address _strategy) internal view returns (uint256) {
         uint256 mTotalAssets = totalAssets();
-        uint256 mDebtLimit = debtRatio.mulDiv(mTotalAssets, MAX_BPS);
+        uint256 mDebtLimit = debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS);
         uint256 mTotalDebt = totalDebt;
 
-        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(mTotalAssets, MAX_BPS);
+        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS);
         uint256 sTotalDebt = strategies[_strategy].totalDebt;
         uint256 sMinDebtDelta = strategies[_strategy].minDebtDelta;
         uint256 sMaxDebtDelta = strategies[_strategy].maxDebtDelta;
@@ -253,7 +267,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             return strategies[_strategy].totalDebt;
         }
 
-        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(totalAssets(), MAX_BPS);
+        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(totalAssets(), Constants.MAX_BPS);
         uint256 sTotalDebt = strategies[_strategy].totalDebt;
 
         if(sTotalDebt <= sDebtLimit) {
@@ -293,11 +307,15 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 _expectedShares,
         uint256 _actualShares
     ) internal view {
+        if (_actualAssets == 0 || _actualShares == 0) revert Errors.SlippageCheckFailed(Constants.MAX_BPS, slippageLimit);
         if (_expectedAssets == 0 || _expectedShares == 0) return;
         
-        uint256 expectedExchangeRate = _expectedAssets.mulDiv(1 ether, _expectedShares);
-        uint256 actualExchangeRate = _actualAssets.mulDiv(1 ether, _actualShares);
-        uint256 slippage = expectedExchangeRate > actualExchangeRate ? (expectedExchangeRate - actualExchangeRate).mulDiv(MAX_BPS, expectedExchangeRate) : 0;
+        uint256 expectedExchangeRate = _expectedAssets.mulDiv(10**36, _expectedShares);
+        uint256 actualExchangeRate = _actualAssets.mulDiv(10**36, _actualShares);
+        uint256 slippage = 
+            expectedExchangeRate > actualExchangeRate ? 
+            (expectedExchangeRate - actualExchangeRate).mulDiv(Constants.MAX_BPS, expectedExchangeRate, Math.Rounding.Ceil)
+            : 0;
         require(slippage <= slippageLimit, Errors.SlippageCheckFailed(slippage, slippageLimit));
     }
 
@@ -305,14 +323,13 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @return totalProfit The total profit across all active strategies, after deducting the performance fee.
     /// @return totalLoss The total loss across all active strategies.
     function _currentPnL() internal view returns (uint256 totalProfit, uint256 totalLoss) {
-        if (activeStrategies == 0) return (0, 0);
+        uint256 nStrategies = withdrawOrder.length;
+        if (nStrategies == 0) return (0, 0);
 
-        for(uint8 i = 0; i < activeStrategies; ++i){
+        for(uint256 i = 0; i < nStrategies; ++i){
             address strategy = withdrawOrder[i];
-            if(strategies[strategy].totalDebt == 0) continue;
-
             (uint256 gain, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
-            totalProfit += gain.mulDiv(MAX_BPS - performanceFee, MAX_BPS);
+            totalProfit += gain.mulDiv(Constants.MAX_BPS - performanceFee, Constants.MAX_BPS);
             totalLoss += loss;
         }
 
@@ -333,7 +350,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @return liquidity The amount of liquidity that is available
     function _availableLiquidity() internal view returns (uint256 liquidity) {
         liquidity = _balance();
-        for(uint256 i = 0; i < activeStrategies; ++i) {
+        uint256 nStrategies = withdrawOrder.length;
+        for(uint256 i = 0; i < nStrategies; ++i) {
             uint256 strategyTotalAssets = IStrategyAdapter(withdrawOrder[i]).totalAssets();
             uint256 strategyAvailableLiquidity = IStrategyAdapter(withdrawOrder[i]).availableLiquidity();
             liquidity += Math.min(strategyTotalAssets, strategyAvailableLiquidity);
@@ -385,7 +403,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
 
         if (_caller != _owner) _spendAllowance(_owner, _caller, _shares);
         if (_assets > _balance()) {
-            for(uint8 i = 0; i < activeStrategies; ++i){
+            uint256 nStrategies = withdrawOrder.length;
+            for(uint256 i = 0; i < nStrategies; ++i){
                 address strategy = withdrawOrder[i];
                 uint256 assetsToWithdraw = (_assets - _balance())
                                                 .min(strategies[strategy].totalDebt)
@@ -433,7 +452,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(_loss > 0) _settleLoss(msg.sender, _loss);
         if(_gain > 0) {
             strategies[msg.sender].totalGain += _gain;
-            feesCollected = _gain.mulDiv(performanceFee, MAX_BPS);
+            feesCollected = _gain.mulDiv(performanceFee, Constants.MAX_BPS);
             profit = _gain - feesCollected;
         } 
 
@@ -446,7 +465,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 newLockedProfit = _calculateLockedProfit() + profit;
         lockedProfit = newLockedProfit > _loss ? newLockedProfit - _loss : 0;
 
-        strategies[msg.sender].lastReport = block.timestamp;
+        strategies[msg.sender].lastReport = block.timestamp.toUint32();
         lastReport = block.timestamp;
 
         if(debtToRepay + _gain > 0) IERC20(asset()).safeTransferFrom(msg.sender, address(this), debtToRepay + _gain);
@@ -458,7 +477,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @notice Loops through the active strategies and settles any unrealized loss.
     /// @dev To be executed before any withdraw or redeem. Adds loss front-running protection
     function _settleUnrealizedLosses() internal {
-        for(uint8 i = 0; i < activeStrategies; ++i){
+        uint256 nStrategies = withdrawOrder.length;
+        for(uint256 i = 0; i < nStrategies; ++i){
             address strategy = withdrawOrder[i];
             if(strategies[strategy].totalDebt == 0) continue;
             

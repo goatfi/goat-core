@@ -27,3 +27,6 @@ lcov.info
 slither.db.json
 
 .DS_Store
+
+# Certora
+.certora_internal/
