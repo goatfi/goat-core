@@ -74,7 +74,7 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         strategyOne.lose(100 ether);
         amountToWithdraw = 100 ether;
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 1_000, 0));
+        vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 1_001, 0));
         multistrategy.withdraw(amountToWithdraw, users.bob, users.bob);
     }
 
@@ -92,8 +92,8 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         strategyOne.lose(100 ether);
         amountToWithdraw = 100 ether;
 
-        vm.prank(users.manager); strategyOne.setSlippageLimit(1_000);
-        vm.prank(users.manager); multistrategy.setSlippageLimit(1_000);
+        vm.prank(users.manager); strategyOne.setSlippageLimit(1_001);
+        vm.prank(users.manager); multistrategy.setSlippageLimit(1_001);
 
         // Multistrategy [previewRedeem] will always round to its favor. So it will round assets to ceil.
         uint256 sharesWithSlippage = amountToWithdraw.mulDiv(10 ether, 9 ether, Math.Rounding.Ceil);

@@ -15,7 +15,7 @@ gas-report:
 
 coverage:
 	@echo Creating test coverage for Goat Contracts
-	@forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage
+	@forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage && open coverage/index.html
 
 contract-% c-%:
 	@echo Running tests for contract $*

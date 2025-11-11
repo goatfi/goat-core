@@ -1,0 +1,11 @@
+previewRedeem.t.sol
+├── when shares is 0
+│   └── it should return 0
+└── when shares is greater than 0
+    ├── when totalSupply is 0
+    │   └── it should return assets based on shares and decimals offset
+    └── when totalSupply is greater than 0
+        ├── when slippage limit is 0
+        │   └── it should return exact conversion from shares to assets
+        └── when slippage limit is greater than 0
+            └── it should return decreased assets to account for slippage
