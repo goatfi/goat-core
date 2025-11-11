@@ -1,40 +1,40 @@
 import "../setup/complete_setup.spec";
 
-rule HLP_PreviewDepositCorrectness(env e, address receiver) {
-    nonSceneAddressRequirements(receiver);
+rule HLP_PreviewDepositCorrectness(env e) {
+    completeSetupForEnv(e);
 
     uint256 assets;
     uint256 sharesReported = previewDeposit(e, assets);
-    uint256 sharesReceived = deposit(e, assets, receiver);
+    uint256 sharesReceived = deposit(e, assets, e.msg.sender);
 
-    assert sharesReported <= sharesReceived;
+    assert sharesReported == sharesReceived;
 }
 
-rule HLP_PreviewMintCorrectness(env e, address receiver) {
-    nonSceneAddressRequirements(receiver);
+rule HLP_PreviewMintCorrectness(env e) {
+    completeSetupForEnv(e);
 
     uint256 shares;
     uint256 assetsReported = previewMint(e, shares);
-    uint256 assetsPaid = mint(e, shares, receiver);
+    uint256 assetsPaid = mint(e, shares, e.msg.sender);
 
-    assert assetsReported == assetsPaid; //Check the signs
+    assert assetsReported == assetsPaid;
 }
 
-rule HLP_PreviewWithdrawCorrectness(env e, address receiver) {
-    nonSceneAddressRequirements(receiver);
+rule HLP_PreviewWithdrawCorrectness(env e) {
+    completeSetupForEnv(e);
 
     uint256 assets;
     uint256 sharesReported = previewWithdraw(e, assets);
-    uint256 sharesPaid = withdraw(e, assets, receiver, e.msg.sender);
-    assert sharesPaid == sharesReported; //Check the signs
+    uint256 sharesPaid = withdraw(e, assets, e.msg.sender, e.msg.sender);
+    assert sharesPaid <= sharesReported;
 }
 
-rule HLP_PreviewRedeemCorrectness(env e, address receiver) {
-    nonSceneAddressRequirements(receiver);
+rule HLP_PreviewRedeemCorrectness(env e) {
+    completeSetupForEnv(e);
 
     uint256 shares;
     uint256 assetsReported = previewRedeem(e, shares);
-    uint256 assetsReceived = redeem(e, shares, receiver, e.msg.sender);
+    uint256 assetsReceived = redeem(e, shares, e.msg.sender, e.msg.sender);
 
-    assert assetsReported <= assetsReceived;
+    assert assetsReceived >= assetsReported;
 }   

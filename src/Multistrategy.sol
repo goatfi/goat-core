@@ -307,13 +307,14 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 _expectedShares,
         uint256 _actualShares
     ) internal view {
+        if (_actualAssets == 0 || _actualShares == 0) revert Errors.SlippageCheckFailed(Constants.MAX_BPS, slippageLimit);
         if (_expectedAssets == 0 || _expectedShares == 0) return;
         
         uint256 expectedExchangeRate = _expectedAssets.mulDiv(10**36, _expectedShares);
         uint256 actualExchangeRate = _actualAssets.mulDiv(10**36, _actualShares);
         uint256 slippage = 
             expectedExchangeRate > actualExchangeRate ? 
-            (expectedExchangeRate - actualExchangeRate).mulDiv(Constants.MAX_BPS, expectedExchangeRate)
+            (expectedExchangeRate - actualExchangeRate).mulDiv(Constants.MAX_BPS, expectedExchangeRate, Math.Rounding.Ceil)
             : 0;
         require(slippage <= slippageLimit, Errors.SlippageCheckFailed(slippage, slippageLimit));
     }
