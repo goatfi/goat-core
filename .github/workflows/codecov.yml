@@ -7,10 +7,11 @@ on:
       - main
 
 jobs:
-steps:
-  - uses: actions/checkout@main
-  - uses: codecov/codecov-action@v5
-    with:
-      fail_ci_if_error: true
-      files: ./lcov.info
-      token: ${{ secrets.CODECOV_TOKEN }}
+  codecov:
+    steps:
+      - uses: actions/checkout@main
+      - uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          files: ./lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
