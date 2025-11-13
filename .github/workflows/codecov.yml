@@ -8,6 +8,7 @@ on:
 
 jobs:
   codecov:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
       - uses: codecov/codecov-action@v5
