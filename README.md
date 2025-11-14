@@ -4,6 +4,8 @@
 This repository contains the the codebase for the core infrastructure of Goat Multistrategy contracts, built with Foundry. <br>
 It also contains the spec and configuration files used to formaly verify the codebase with Certora.
 
+[![codecov](https://codecov.io/gh/goatfi/goat-core/graph/badge.svg?token=LNVEJLRAH1)](https://codecov.io/gh/goatfi/goat-core)
+
 ### Installing Certora
 
 To install the Certora CLI using a Python virtual environment, follow these steps:
