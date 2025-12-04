@@ -6,8 +6,8 @@ import { IERC4626 } from "@openzeppelin/interfaces/IERC4626.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { StrategyAdapterAdminable } from "./StrategyAdapterAdminable.sol";
-import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
-import { IMultistrategy } from "interfaces/IMultistrategy.sol";
+import { IStrategyAdapter } from "../interfaces/IStrategyAdapter.sol";
+import { IMultistrategy } from "../interfaces/IMultistrategy.sol";
 import { Constants } from "../libraries/Constants.sol";
 import { Errors } from "../libraries/Errors.sol";
 
@@ -50,8 +50,13 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     /// @notice Checks if `msg.sender` is the Multistrategy.
     /// @dev Reverts if `msg.sender` isn't the Multistrategy.
     modifier onlyMultistrategy() {
-        require(msg.sender == multistrategy, Errors.CallerNotMultistrategy(msg.sender));
+        _onlyMultistrategy();
         _;
+    }
+
+    /// @notice Internal function to check if caller is the multistrategy.
+    function _onlyMultistrategy() internal view {
+        require(msg.sender == multistrategy, Errors.CallerNotMultistrategy(msg.sender));
     }
 
     /*//////////////////////////////////////////////////////////////////////////

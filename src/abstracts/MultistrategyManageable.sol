@@ -4,8 +4,8 @@ pragma solidity 0.8.30;
 
 import { SafeCast } from "@openzeppelin/utils/math/SafeCast.sol";
 import { MultistrategyAdminable } from "./MultistrategyAdminable.sol";
-import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
-import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
+import { IMultistrategyManageable } from "../interfaces/IMultistrategyManageable.sol";
+import { IStrategyAdapter } from "../interfaces/IStrategyAdapter.sol";
 import { Constants } from "../libraries/Constants.sol";
 import { DataTypes } from "../libraries/DataTypes.sol";
 import { Errors } from "../libraries/Errors.sol";
@@ -67,10 +67,16 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
 
     /// @notice Check if `_strategy` is active.
     /// @dev Reverts if `_strategy` is not active.
-    /// @param _strategy Address of the strategy to check if it is active. 
+    /// @param _strategy Address of the strategy to check if it is active.
     modifier onlyActiveStrategy(address _strategy) {
-        require(strategies[_strategy].lastReport > 0, Errors.StrategyNotActive(_strategy));
+        _onlyActiveStrategy(_strategy);
         _;
+    }
+
+    /// @notice Internal function to check if `_strategy` is active.
+    /// @param _strategy Address of the strategy to check if it is active.
+    function _onlyActiveStrategy(address _strategy) internal view {
+        require(strategies[_strategy].lastReport > 0, Errors.StrategyNotActive(_strategy));
     }
 
     /*//////////////////////////////////////////////////////////////////////////

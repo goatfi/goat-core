@@ -3,7 +3,7 @@
 pragma solidity ^0.8.27;
 
 import { StrategyAdapter_Base_Test } from "../../../shared/StrategyAdapter_Base.t.sol";
-import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
+import { IStrategyAdapter } from "src/interfaces/IStrategyAdapter.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Errors } from "src/libraries/Errors.sol";
 

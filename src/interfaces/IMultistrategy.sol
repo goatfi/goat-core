@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.27;
 
-import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
+import { IMultistrategyManageable } from "./IMultistrategyManageable.sol";
 
 interface IMultistrategy is IMultistrategyManageable {
     /// @notice Emitted when a strategy has requested a credit.

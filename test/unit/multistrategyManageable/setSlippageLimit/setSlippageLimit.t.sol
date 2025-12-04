@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { Errors } from "src/libraries/Errors.sol";
-import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
+import { IMultistrategyManageable } from "src/interfaces/IMultistrategyManageable.sol";
 
 contract SetSlippageLimit_Integration_Concrete_Test is Multistrategy_Base_Test {
     uint256 newLimit;

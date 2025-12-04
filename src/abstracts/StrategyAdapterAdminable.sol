@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
-import { IStrategyAdapterAdminable } from "interfaces/IStrategyAdapterAdminable.sol";
+import { IStrategyAdapterAdminable } from "../interfaces/IStrategyAdapterAdminable.sol";
 import { Errors } from "../libraries/Errors.sol";
 
 abstract contract StrategyAdapterAdminable is IStrategyAdapterAdminable, Ownable, Pausable {
@@ -24,8 +24,13 @@ abstract contract StrategyAdapterAdminable is IStrategyAdapterAdminable, Ownable
 
     /// @notice Reverts if called by any account other than the owner, or a guardian.
     modifier onlyGuardian() {
-        require(msg.sender == owner() || guardians[msg.sender], Errors.Unauthorized(msg.sender));
+        _onlyGuardian();
         _;
+    }
+
+    /// @notice Internal function to check if caller is owner or guardian.
+    function _onlyGuardian() internal view {
+        require(msg.sender == owner() || guardians[msg.sender], Errors.Unauthorized(msg.sender));
     }
 
     /*//////////////////////////////////////////////////////////////////////////

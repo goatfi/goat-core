@@ -8,7 +8,7 @@ import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Multistrategy } from "src/Multistrategy.sol";
 import { DataTypes } from "src/libraries/DataTypes.sol";
 import { Errors } from "src/libraries/Errors.sol";
-import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
+import { IMultistrategyManageable } from "src/interfaces/IMultistrategyManageable.sol";
 
 contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     uint256 debtRatio = 5_000;

@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
 import { Errors } from "src/libraries/Errors.sol";
-import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
+import { IMultistrategyManageable } from "src/interfaces/IMultistrategyManageable.sol";
 
 contract RemoveStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     MockStrategyAdapter strategyOne;
