@@ -65,6 +65,19 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
+    function test_RevertWhen_ActualAssetsIsZero() 
+        external 
+        whenContractNotPaused
+        whenEnoughSharesToCoverWithdraw
+        whenEnoughLiquidity
+    {
+        strategyOne.lose(deposit);
+        amountToWithdraw = 0;
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 10_000, 0));
+        multistrategy.withdraw(amountToWithdraw, users.bob, users.bob);
+    }
+
     function test_RevertWhen_SlippageNotRespected() 
         external 
         whenContractNotPaused

@@ -70,6 +70,19 @@ contract Redeem_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
+    function test_RevertWhen_ActualSharesIsZero() 
+        external 
+        whenContractNotPaused
+        whenEnoughSharesToCoverRedeem
+        whenEnoughLiquidity
+    {
+        strategyOne.lose(deposit);
+        sharesToRedeem = 0;
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 10_000, 0));
+        multistrategy.redeem(sharesToRedeem, users.bob, users.bob);
+    }
+
     function test_RevertWhen_SlippageNotRespected()
         external
         whenContractNotPaused
