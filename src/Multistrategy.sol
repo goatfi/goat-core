@@ -8,7 +8,7 @@ import { SafeCast } from "@openzeppelin/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
-import { MultistrategyManageable } from "src/abstracts/MultistrategyManageable.sol";
+import { MultistrategyManageable } from "./abstracts/MultistrategyManageable.sol";
 import { IMultistrategy } from "./interfaces/IMultistrategy.sol";
 import { IStrategyAdapter } from "./interfaces/IStrategyAdapter.sol";
 import { Constants } from "./libraries/Constants.sol";
