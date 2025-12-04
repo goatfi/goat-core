@@ -67,10 +67,16 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
 
     /// @notice Check if `_strategy` is active.
     /// @dev Reverts if `_strategy` is not active.
-    /// @param _strategy Address of the strategy to check if it is active. 
+    /// @param _strategy Address of the strategy to check if it is active.
     modifier onlyActiveStrategy(address _strategy) {
-        require(strategies[_strategy].lastReport > 0, Errors.StrategyNotActive(_strategy));
+        _onlyActiveStrategy(_strategy);
         _;
+    }
+
+    /// @notice Internal function to check if `_strategy` is active.
+    /// @param _strategy Address of the strategy to check if it is active.
+    function _onlyActiveStrategy(address _strategy) internal view {
+        require(strategies[_strategy].lastReport > 0, Errors.StrategyNotActive(_strategy));
     }
 
     /*//////////////////////////////////////////////////////////////////////////

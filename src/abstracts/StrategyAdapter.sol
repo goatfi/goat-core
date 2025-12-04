@@ -50,8 +50,13 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
     /// @notice Checks if `msg.sender` is the Multistrategy.
     /// @dev Reverts if `msg.sender` isn't the Multistrategy.
     modifier onlyMultistrategy() {
-        require(msg.sender == multistrategy, Errors.CallerNotMultistrategy(msg.sender));
+        _onlyMultistrategy();
         _;
+    }
+
+    /// @notice Internal function to check if caller is the multistrategy.
+    function _onlyMultistrategy() internal view {
+        require(msg.sender == multistrategy, Errors.CallerNotMultistrategy(msg.sender));
     }
 
     /*//////////////////////////////////////////////////////////////////////////

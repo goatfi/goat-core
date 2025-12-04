@@ -24,8 +24,13 @@ abstract contract StrategyAdapterAdminable is IStrategyAdapterAdminable, Ownable
 
     /// @notice Reverts if called by any account other than the owner, or a guardian.
     modifier onlyGuardian() {
-        require(msg.sender == owner() || guardians[msg.sender], Errors.Unauthorized(msg.sender));
+        _onlyGuardian();
         _;
+    }
+
+    /// @notice Internal function to check if caller is owner or guardian.
+    function _onlyGuardian() internal view {
+        require(msg.sender == owner() || guardians[msg.sender], Errors.Unauthorized(msg.sender));
     }
 
     /*//////////////////////////////////////////////////////////////////////////
