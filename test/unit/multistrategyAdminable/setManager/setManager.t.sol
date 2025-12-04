@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { IMultistrategyAdminable } from "interfaces/IMultistrategyAdminable.sol";
+import { IMultistrategyAdminable } from "src/interfaces/IMultistrategyAdminable.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Errors } from "src/libraries/Errors.sol";
 

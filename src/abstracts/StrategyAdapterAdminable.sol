@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
-import { IStrategyAdapterAdminable } from "interfaces/IStrategyAdapterAdminable.sol";
+import { IStrategyAdapterAdminable } from "../interfaces/IStrategyAdapterAdminable.sol";
 import { Errors } from "../libraries/Errors.sol";
 
 abstract contract StrategyAdapterAdminable is IStrategyAdapterAdminable, Ownable, Pausable {

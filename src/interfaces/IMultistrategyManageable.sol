@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.30;
 
-import { IMultistrategyAdminable } from "interfaces/IMultistrategyAdminable.sol";
+import { IMultistrategyAdminable } from "./IMultistrategyAdminable.sol";
 import { DataTypes } from "../libraries/DataTypes.sol";
 
 interface IMultistrategyManageable is IMultistrategyAdminable {

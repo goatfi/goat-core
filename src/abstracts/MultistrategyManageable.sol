@@ -4,8 +4,8 @@ pragma solidity 0.8.30;
 
 import { SafeCast } from "@openzeppelin/utils/math/SafeCast.sol";
 import { MultistrategyAdminable } from "./MultistrategyAdminable.sol";
-import { IMultistrategyManageable } from "interfaces/IMultistrategyManageable.sol";
-import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
+import { IMultistrategyManageable } from "../interfaces/IMultistrategyManageable.sol";
+import { IStrategyAdapter } from "../interfaces/IStrategyAdapter.sol";
 import { Constants } from "../libraries/Constants.sol";
 import { DataTypes } from "../libraries/DataTypes.sol";
 import { Errors } from "../libraries/Errors.sol";

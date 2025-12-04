@@ -6,8 +6,8 @@ import { IERC4626 } from "@openzeppelin/interfaces/IERC4626.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { StrategyAdapterAdminable } from "./StrategyAdapterAdminable.sol";
-import { IStrategyAdapter } from "interfaces/IStrategyAdapter.sol";
-import { IMultistrategy } from "interfaces/IMultistrategy.sol";
+import { IStrategyAdapter } from "../interfaces/IStrategyAdapter.sol";
+import { IMultistrategy } from "../interfaces/IMultistrategy.sol";
 import { Constants } from "../libraries/Constants.sol";
 import { Errors } from "../libraries/Errors.sol";
 
