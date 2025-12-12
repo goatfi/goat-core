@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 
 contract CreditAvailable_Integration_Concrete_Test is Multistrategy_Base_Test {
-    MockStrategyAdapter strategy;
+    MockAdapter strategy;
     uint256 minDebtDelta = 100 ether;
     uint256 maxDebtDelta = 10_000 ether;
 
@@ -74,7 +74,7 @@ contract CreditAvailable_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenActiveStrategy
     {
         // Create a second strategy and request credit.
-        MockStrategyAdapter strategyTwo = _createAndAddAdapter(5_000, minDebtDelta, maxDebtDelta);
+        MockAdapter strategyTwo = _createAndAddAdapter(5_000, minDebtDelta, maxDebtDelta);
 
         vm.prank(users.manager); strategy.requestCredit();
         vm.prank(users.manager); strategyTwo.requestCredit();

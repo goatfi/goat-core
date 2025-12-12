@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { Base_Test } from "./Base.t.sol";
-import { MockStrategyAdapter } from "../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../mocks/MockAdapter.sol";
 import { Multistrategy } from "src/Multistrategy.sol";
 
 contract Multistrategy_Base_Test is Base_Test {
@@ -32,12 +32,12 @@ contract Multistrategy_Base_Test is Base_Test {
         vm.label({ account: address(multistrategy), newLabel: "Multistrategy" });
     }
 
-    function _createAdapter() internal returns (MockStrategyAdapter adapter) {
-        vm.prank(users.manager); adapter = new MockStrategyAdapter(address(multistrategy));
+    function _createAdapter() internal returns (MockAdapter adapter) {
+        vm.prank(users.manager); adapter = new MockAdapter(address(multistrategy));
     }
 
-    function _createAndAddAdapter(uint256 _debtRatio, uint256 _minDebtDelta, uint256 _maxDebtDelta) internal returns (MockStrategyAdapter adapter) {
-        vm.prank(users.manager); adapter = new MockStrategyAdapter(address(multistrategy));
+    function _createAndAddAdapter(uint256 _debtRatio, uint256 _minDebtDelta, uint256 _maxDebtDelta) internal returns (MockAdapter adapter) {
+        vm.prank(users.manager); adapter = new MockAdapter(address(multistrategy));
         vm.prank(users.owner); multistrategy.addStrategy(address(adapter), _debtRatio, _minDebtDelta, _maxDebtDelta);
     }
 

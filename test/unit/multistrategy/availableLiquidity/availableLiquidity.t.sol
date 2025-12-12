@@ -2,13 +2,13 @@
 pragma solidity ^0.8.27;
 
 import { MultistrategyHarness_Base_Test } from "../../../shared/MultistrategyHarness_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 
 contract AvailableLiquidity_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
     uint256 depositAmount = 1000 ether;
-    MockStrategyAdapter strategyOne;
-    MockStrategyAdapter strategyTwo;
-    MockStrategyAdapter strategyThree;
+    MockAdapter strategyOne;
+    MockAdapter strategyTwo;
+    MockAdapter strategyThree;
 
     function test_AvailableLiquidity_NoDeposits() external view {
         uint256 actualLiquidity = multistrategy.availableLiquidity();

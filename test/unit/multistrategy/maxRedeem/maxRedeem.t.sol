@@ -2,11 +2,11 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 
 contract MaxRedeem_Integration_Concrete_Test is Multistrategy_Base_Test {
-    MockStrategyAdapter strategyOne;
+    MockAdapter strategyOne;
 
     function test_MaxRedeem_ZeroAddress() external view {
         uint256 actualMaxRedeem = multistrategy.maxRedeem(address(0));

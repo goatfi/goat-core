@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Multistrategy } from "src/Multistrategy.sol";
 import { DataTypes } from "src/libraries/DataTypes.sol";
@@ -62,7 +62,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenNotZeroAddress
         whenNotMultistrategyAddress
     {
-        MockStrategyAdapter strategy = _createAdapter();
+        MockAdapter strategy = _createAdapter();
         // We add the strategy
         vm.prank(users.owner); multistrategy.addStrategy(address(strategy), debtRatio, minDebtDelta, maxDebtDelta);
 
@@ -75,7 +75,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     }
 
     /// @dev Testing this requires some setup. As creating a strategy with the wrong base asset
-    ///      would revert, as it is checked in the constructor of the StrategyAdapter.
+    ///      would revert, as it is checked in the constructor of the Adapter.
     ///      We need to deploy a need multistrategy with a different token and create a strategy for
     ///      that multistrategy.
     function test_RevertWhen_AssetDoNotMatch() 
@@ -94,7 +94,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         });
         
         // Deploy a mock strategy for the usdt multistrategy
-        vm.prank(users.manager); MockStrategyAdapter strategyWithWrongMulti = new MockStrategyAdapter(address(newMultistrategy));
+        vm.prank(users.manager); MockAdapter strategyWithWrongMulti = new MockAdapter(address(newMultistrategy));
         
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidStrategy.selector, address(strategyWithWrongMulti)));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategyWithWrongMulti), debtRatio, minDebtDelta, maxDebtDelta);
@@ -112,7 +112,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenStrategyIsInactive
         whenAssetMatch
     {
-        MockStrategyAdapter strategy = _createAdapter();
+        MockAdapter strategy = _createAdapter();
         debtRatio = 11_000;
 
         vm.expectRevert(abi.encodeWithSelector(Errors.DebtRatioAboveMaximum.selector, debtRatio));
@@ -133,7 +133,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenAssetMatch
         whenDebtRatioLeMax
     {
-        MockStrategyAdapter strategy = _createAdapter();
+        MockAdapter strategy = _createAdapter();
         minDebtDelta = 200_000 ether;
         maxDebtDelta = 100_000 ether;
 
@@ -155,7 +155,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenAssetMatch
         whenMinDebtDeltaLeMaxDebtDelta
     {
-        MockStrategyAdapter strategy = _createAdapter();
+        MockAdapter strategy = _createAdapter();
 
         // Expect the relevant event
         vm.expectEmit({ emitter: address(multistrategy) });

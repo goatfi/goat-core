@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 
 contract TotalAssets_Integration_Concrete_Test is Multistrategy_Base_Test {
-    MockStrategyAdapter strategy;
+    MockAdapter strategy;
 
     function test_TotalAssets_NoDeposits() external view {
         // Assert that totalAssets are as expected
@@ -70,7 +70,7 @@ contract TotalAssets_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenActiveStrategy
         whenCreditRequested
     {
-        MockStrategyAdapter strategyTwo = _createAndAddAdapter(5_000, 0, type(uint256).max);
+        MockAdapter strategyTwo = _createAndAddAdapter(5_000, 0, type(uint256).max);
         vm.prank(users.manager); strategyTwo.requestCredit();
         
         // Assert that totalAssets are as expected

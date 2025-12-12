@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { MultistrategyHarness_Base_Test } from "../../../shared/MultistrategyHarness_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 
 contract Balance_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
     uint256 depositAmount = 1000 ether;
@@ -17,7 +17,7 @@ contract Balance_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
 
     modifier whenActiveCredit() {
         _userDeposit(users.bob, depositAmount);
-        MockStrategyAdapter adapter = _createAndAddAdapter(6_000, 0, 100_000 ether);
+        MockAdapter adapter = _createAndAddAdapter(6_000, 0, 100_000 ether);
         vm.prank(users.manager); adapter.requestCredit();
         _;
     }
