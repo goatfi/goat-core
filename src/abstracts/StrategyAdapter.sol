@@ -159,6 +159,7 @@ abstract contract StrategyAdapter is IStrategyAdapter, StrategyAdapterAdminable 
         } else {
             loss = totalDebt - _currentAssets;
         }
+        return (gain, loss);
     }
 
     /// @notice Returns the current balance of asset in this contract.

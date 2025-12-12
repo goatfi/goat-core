@@ -294,6 +294,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(lockedFundsRatio < 1 ether) {
             newLockedProfit = lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, 1 ether);
         }
+        return newLockedProfit;
     }
 
     /// @notice Calculates slippage based on exchange rate degradation between expected and actual values
@@ -342,6 +343,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
                 totalProfit = 0;
             }
         }
+        return (totalProfit, totalLoss);
     }
 
     /// @notice Calculates the liquidity available to fulfill withdraws

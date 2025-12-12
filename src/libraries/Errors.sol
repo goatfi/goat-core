@@ -60,11 +60,6 @@ library Errors {
     error GainLossMismatch();
 
     /**
-     * @notice Thrown when a deposit would exceed the configured deposit limit.
-     */
-    error DepositLimit();
-
-    /**
      * @notice Thrown when the owner tries to set a fee above the maximum permitted fee.
      * @param fee The fee value that exceeded the allowed maximum.
      */
@@ -103,12 +98,6 @@ library Errors {
     error InvalidWithdrawOrder();
 
     /**
-     * @notice Thrown when trying to add a new strategy to the multistrategy
-     * but the maximum allowed number of strategies has already been reached.
-     */
-    error MaximumAmountStrategies();
-
-    /**
      * @notice Thrown when `strategy` is not valid.
      * @param strategy The address that failed validation.
      */
@@ -136,25 +125,4 @@ library Errors {
      * @param amount1 The actual amount received or returned.
      */
     error SlippageCheckFailed(uint256 amount0, uint256 amount1);
-
-    /*//////////////////////////////////////////////////////////////////////////
-                            STRATEGY ADAPTER HARVESTABLE
-    //////////////////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Thrown when the reward added is not valid according to `_verifyRewardToken`.
-     * @param rewardToken The address of the reward token that failed validation.
-     */
-    error InvalidRewardToken(address rewardToken);
-
-    /**
-     * @notice Thrown when this adapter is being harvested but there are no rewards defined
-     * in the rewards array.
-     */
-    error NoRewards();
-
-    /**
-     * @notice Thrown when a gauge is invalid.
-     */
-    error InvalidGauge();
 }

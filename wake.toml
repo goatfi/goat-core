@@ -1,0 +1,14 @@
+[compiler.solc]
+evm_version = "cancun"
+exclude_paths = ["dependencies", "test", "certora"]
+remappings = [
+    "@openzeppelin/=dependencies/@openzeppelin-contracts-5.4.0/",
+    "forge-std/=dependencies/forge-std-1.10.0/",
+    "solady/=dependencies/solady-0.1.26/src/"
+]
+
+[compiler.solc.optimizer]
+runs = 800
+
+[detectors]
+ignore_paths = ["dependencies", "test", "certora"]
