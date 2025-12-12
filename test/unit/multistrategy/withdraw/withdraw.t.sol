@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 import { ERC4626 } from "@openzeppelin/token/ERC20/extensions/ERC4626.sol";
 import { IERC4626 } from "@openzeppelin/interfaces/IERC4626.sol";
@@ -15,8 +15,8 @@ contract Withdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
     uint256 deposit = 1000 ether;
     uint256 amountToWithdraw;
 
-    MockStrategyAdapter strategyOne;
-    MockStrategyAdapter strategyTwo;
+    MockAdapter strategyOne;
+    MockAdapter strategyTwo;
 
     function test_RevertWhen_ContractIsPaused() external {
         vm.prank(users.guardian); multistrategy.pause();

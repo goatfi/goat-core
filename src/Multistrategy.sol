@@ -10,7 +10,7 @@ import { IERC20Metadata } from "@openzeppelin/token/ERC20/extensions/IERC20Metad
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { MultistrategyManageable } from "./abstracts/MultistrategyManageable.sol";
 import { IMultistrategy } from "./interfaces/IMultistrategy.sol";
-import { IStrategyAdapter } from "./interfaces/IStrategyAdapter.sol";
+import { IAdapter } from "./interfaces/IAdapter.sol";
 import { Constants } from "./libraries/Constants.sol";
 import { Errors } from "./libraries/Errors.sol";
 
@@ -294,6 +294,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(lockedFundsRatio < 1 ether) {
             newLockedProfit = lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, 1 ether);
         }
+        return newLockedProfit;
     }
 
     /// @notice Calculates slippage based on exchange rate degradation between expected and actual values
@@ -328,7 +329,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
 
         for(uint256 i = 0; i < nStrategies; ++i){
             address strategy = withdrawOrder[i];
-            (uint256 gain, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
+            (uint256 gain, uint256 loss) = IAdapter(strategy).currentPnL();
             totalProfit += gain.mulDiv(Constants.MAX_BPS - performanceFee, Constants.MAX_BPS);
             totalLoss += loss;
         }
@@ -342,6 +343,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
                 totalProfit = 0;
             }
         }
+        return (totalProfit, totalLoss);
     }
 
     /// @notice Calculates the liquidity available to fulfill withdraws
@@ -352,8 +354,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         liquidity = _balance();
         uint256 nStrategies = withdrawOrder.length;
         for(uint256 i = 0; i < nStrategies; ++i) {
-            uint256 strategyTotalAssets = IStrategyAdapter(withdrawOrder[i]).totalAssets();
-            uint256 strategyAvailableLiquidity = IStrategyAdapter(withdrawOrder[i]).availableLiquidity();
+            uint256 strategyTotalAssets = IAdapter(withdrawOrder[i]).totalAssets();
+            uint256 strategyAvailableLiquidity = IAdapter(withdrawOrder[i]).availableLiquidity();
             liquidity += Math.min(strategyTotalAssets, strategyAvailableLiquidity);
 
             if(strategyTotalAssets > strategyAvailableLiquidity) break;
@@ -408,10 +410,10 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
                 address strategy = withdrawOrder[i];
                 uint256 assetsToWithdraw = (_assets - _balance())
                                                 .min(strategies[strategy].totalDebt)
-                                                .min(IStrategyAdapter(strategy).availableLiquidity());
+                                                .min(IAdapter(strategy).availableLiquidity());
                 if(assetsToWithdraw == 0) continue;
 
-                uint256 withdrawn = IStrategyAdapter(strategy).withdraw(assetsToWithdraw);
+                uint256 withdrawn = IAdapter(strategy).withdraw(assetsToWithdraw);
                 strategies[strategy].totalDebt -= withdrawn;
                 totalDebt -= withdrawn;
 
@@ -482,8 +484,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             address strategy = withdrawOrder[i];
             if(strategies[strategy].totalDebt == 0) continue;
             
-            (, uint256 loss) = IStrategyAdapter(strategy).currentPnL();
-            if(loss > 0) IStrategyAdapter(strategy).askReport();
+            (, uint256 loss) = IAdapter(strategy).currentPnL();
+            if(loss > 0) IAdapter(strategy).askReport();
         }
     }
 

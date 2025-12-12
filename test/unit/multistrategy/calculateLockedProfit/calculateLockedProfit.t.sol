@@ -3,10 +3,10 @@ pragma solidity ^0.8.27;
 
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { MultistrategyHarness_Base_Test } from "../../../shared/MultistrategyHarness_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 
 contract CalculateLockedProfit_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
-    MockStrategyAdapter strategy;
+    MockAdapter strategy;
 
     function test_CalculateLockedProfit_NoFunds() external view {
         uint256 actualLockedProfit = multistrategy.calculateLockedProfit();

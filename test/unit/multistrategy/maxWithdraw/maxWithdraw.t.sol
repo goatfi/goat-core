@@ -2,11 +2,11 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 
 contract MaxWithdraw_Integration_Concrete_Test is Multistrategy_Base_Test {
-    MockStrategyAdapter strategyOne;
+    MockAdapter strategyOne;
 
     function test_MaxWithdraw_ZeroAddress() external view {
         uint256 actualMaxWithdraw = multistrategy.maxWithdraw(address(0));

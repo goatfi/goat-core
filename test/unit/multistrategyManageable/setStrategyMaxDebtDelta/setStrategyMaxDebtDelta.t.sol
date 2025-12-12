@@ -2,13 +2,13 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 import { Errors } from "src/libraries/Errors.sol";
 import { IMultistrategyManageable } from "src/interfaces/IMultistrategyManageable.sol";
 
 contract SetStrategyMaxDebtDelta_Integration_Concrete_Test is Multistrategy_Base_Test {
 
-    MockStrategyAdapter strategy;
+    MockAdapter strategy;
     uint256 minDebtDelta = 100 ether;
     uint256 maxDebtDelta;
 

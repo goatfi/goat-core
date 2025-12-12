@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 
 contract CurrentPnL_Integration_Concrete_Test is Multistrategy_Base_Test {
-    MockStrategyAdapter strategy;
+    MockAdapter strategy;
     uint256 constant MAX_BPS = 10_000;
     uint256 constant PERFORMANCE_FEE = 1000; // 10%
 
@@ -40,8 +40,8 @@ contract CurrentPnL_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenStrategiesHavePositiveDebt
     {
         // Create more strategies
-        MockStrategyAdapter strategyTwo = _createAndAddAdapter(2000, 100 ether, 1000 ether);
-        MockStrategyAdapter strategyThree = _createAndAddAdapter(3000, 100 ether, 1000 ether);
+        MockAdapter strategyTwo = _createAndAddAdapter(2000, 100 ether, 1000 ether);
+        MockAdapter strategyThree = _createAndAddAdapter(3000, 100 ether, 1000 ether);
         vm.prank(users.manager); strategyTwo.requestCredit();
         vm.prank(users.manager); strategyThree.requestCredit();
 
@@ -66,8 +66,8 @@ contract CurrentPnL_Integration_Concrete_Test is Multistrategy_Base_Test {
         whenStrategiesHavePositiveDebt
     {
         // Create more strategies
-        MockStrategyAdapter strategyTwo = _createAndAddAdapter(2000, 100 ether, 1000 ether);
-        MockStrategyAdapter strategyThree = _createAndAddAdapter(3000, 100 ether, 1000 ether);
+        MockAdapter strategyTwo = _createAndAddAdapter(2000, 100 ether, 1000 ether);
+        MockAdapter strategyThree = _createAndAddAdapter(3000, 100 ether, 1000 ether);
         vm.prank(users.manager); strategyTwo.requestCredit();
         vm.prank(users.manager); strategyThree.requestCredit();
 

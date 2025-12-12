@@ -4,10 +4,10 @@ pragma solidity ^0.8.27;
 import { ERC20 } from "../../dependencies/@openzeppelin-contracts-5.4.0/token/ERC20/ERC20.sol";
 import { IERC20, SafeERC20 } from "../../dependencies/@openzeppelin-contracts-5.4.0/token/ERC20/utils/SafeERC20.sol";
 import { IMultistrategy } from "../../src/Multistrategy.sol";
-import { StrategyAdapter } from "../../src/abstracts/StrategyAdapter.sol";
+import { Adapter } from "../../src/abstracts/Adapter.sol";
 import { VaultHarness } from "./VaultHarness.sol";
 
-contract AdapterHarness is StrategyAdapter {
+contract AdapterHarness is Adapter {
     using SafeERC20 for IERC20;
 
     VaultHarness public vault;
@@ -15,7 +15,7 @@ contract AdapterHarness is StrategyAdapter {
     constructor(
         address _multistrategy
     ) 
-        StrategyAdapter(_multistrategy, "Mock", "MOCK") 
+        Adapter(_multistrategy, "Mock", "MOCK") 
     {
         vault = new VaultHarness(ERC20(asset), "Staked DAI", "sDAI");
         _giveAllowances();

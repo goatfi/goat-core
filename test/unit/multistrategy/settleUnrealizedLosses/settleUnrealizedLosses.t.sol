@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import { MultistrategyHarness_Base_Test } from "../../../shared/MultistrategyHarness_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 
 contract SettleUnrealizedLosses_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
-    MockStrategyAdapter adapter;
+    MockAdapter adapter;
 
     function test_SettleUnrealizedLosses_NoActiveStrategies() external {
         uint256 initialLockedProfit = multistrategy.lockedProfit();

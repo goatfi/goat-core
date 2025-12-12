@@ -2,11 +2,11 @@
 pragma solidity ^0.8.27;
 
 import { MultistrategyHarness_Base_Test } from "../../../shared/MultistrategyHarness_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
 contract SettleLoss_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
-    MockStrategyAdapter strategy;
+    MockAdapter strategy;
 
     modifier whenNotZeroAddress() {
         strategy = _createAdapter();

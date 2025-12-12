@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 
 contract DebtExcess_Integration_Concrete_Test is Multistrategy_Base_Test {
-    MockStrategyAdapter strategy;
+    MockAdapter strategy;
 
     function test_DebtExcess_ZeroAddress() external view {
         uint256 actualDebtExcess = multistrategy.debtExcess(address(strategy));

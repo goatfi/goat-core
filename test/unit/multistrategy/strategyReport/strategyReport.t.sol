@@ -2,14 +2,14 @@
 pragma solidity ^0.8.27;
 
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
-import { MockStrategyAdapter } from "../../../mocks/MockStrategyAdapter.sol";
+import { MockAdapter } from "../../../mocks/MockAdapter.sol";
 import { IMultistrategy } from "src/interfaces/IMultistrategy.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
 import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
 contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
-    MockStrategyAdapter strategy;
+    MockAdapter strategy;
 
     uint256 deposit = 1_000 ether;
     uint256 gainAmount;

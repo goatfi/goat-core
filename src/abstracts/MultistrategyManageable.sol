@@ -5,7 +5,7 @@ pragma solidity 0.8.30;
 import { SafeCast } from "@openzeppelin/utils/math/SafeCast.sol";
 import { MultistrategyAdminable } from "./MultistrategyAdminable.sol";
 import { IMultistrategyManageable } from "../interfaces/IMultistrategyManageable.sol";
-import { IStrategyAdapter } from "../interfaces/IStrategyAdapter.sol";
+import { IAdapter } from "../interfaces/IAdapter.sol";
 import { Constants } from "../libraries/Constants.sol";
 import { DataTypes } from "../libraries/DataTypes.sol";
 import { Errors } from "../libraries/Errors.sol";
@@ -152,7 +152,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         uint256 _maxDebtDelta
     ) external onlyOwner {
         require(_strategy != address(0) && _strategy != address(this), Errors.InvalidStrategy(_strategy));
-        require(IStrategyAdapter(_strategy).multistrategy() == address(this), Errors.InvalidStrategy(_strategy));
+        require(IAdapter(_strategy).multistrategy() == address(this), Errors.InvalidStrategy(_strategy));
         require(strategies[_strategy].lastReport == 0, Errors.StrategyAlreadyActive(_strategy));
         require(debtRatio + _debtRatio <=  Constants.MAX_BPS, Errors.DebtRatioAboveMaximum(debtRatio + _debtRatio));
         require(_minDebtDelta <= _maxDebtDelta, Errors.InvalidDebtDelta());
