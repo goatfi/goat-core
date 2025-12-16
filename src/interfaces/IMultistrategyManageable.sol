@@ -142,6 +142,5 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
 
     /// @notice Panics an adapter.
     /// @param _strategy Address of the strategy.
-    /// @return The amount of assets left in the adapter.
-    function panicAdapter(address _strategy) external returns (uint256);
+    function panicAdapter(address _strategy) external;
 }

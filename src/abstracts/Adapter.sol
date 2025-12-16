@@ -122,10 +122,8 @@ abstract contract Adapter is IAdapter, Ownable {
     function panic() external onlyMultistrategy {
         _emergencyWithdraw();
         _revokeAllowances();
-
-        uint256 currentAssets = _balance();
-        (uint256 gain, uint256 loss) = _calculateGainAndLoss(currentAssets);
-        IMultistrategy(multistrategy).strategyReport(currentAssets - gain, gain, loss);
+        (uint256 gain, uint256 loss) = _calculateGainAndLoss(_balance());
+        IMultistrategy(multistrategy).strategyReport(_balance() - gain, gain, loss);
     }
 
     /*//////////////////////////////////////////////////////////////////////////
