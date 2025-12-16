@@ -225,6 +225,9 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
 
+    /// @notice Sets the debt ratio for a strategy.
+    /// @param _strategy The strategy address.
+    /// @param _debtRatio The new debt ratio.
     function _setDebtRatio(address _strategy, uint256 _debtRatio) internal {
         uint256 newDebtRatio = debtRatio - strategies[_strategy].debtRatio + _debtRatio;
         require(newDebtRatio <= Constants.MAX_BPS, Errors.DebtRatioAboveMaximum(newDebtRatio));
