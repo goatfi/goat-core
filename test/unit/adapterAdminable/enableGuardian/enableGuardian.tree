@@ -1,6 +1,0 @@
-enableGuardian.t.sol
-├── when the caller is not the owner
-│  └── it should revert OwnableUnauthorizedAccount error
-└── when the caller is the owner
-   ├── it should enable the guardian
-   └── it should emit a {GuardianEnabled} eventian

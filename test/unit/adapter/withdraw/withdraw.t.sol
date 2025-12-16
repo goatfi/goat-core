@@ -16,21 +16,9 @@ contract Withdraw_Integration_Concrete_Test is Adapter_Base_Test {
         _;
     }
 
-    function test_RevertWhen_ContractPaused() external whenCallerMultistrategy {
-        vm.prank(users.guardian); strategy.pause();
-
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        vm.prank(address(multistrategy)); strategy.withdraw(1_000 ether);
-    }
-
-    modifier whenContractNotPaused() {
-        _;
-    }
-
     function test_RevertWhen_SlippageLimitExceeded()
         external
         whenCallerMultistrategy
-        whenContractNotPaused
     {
         vm.prank(users.manager); strategy.setSlippageLimit(1_000);
         strategy.setStakingSlippage(1_500);
@@ -48,7 +36,6 @@ contract Withdraw_Integration_Concrete_Test is Adapter_Base_Test {
     function test_Withdraw_PositiveSlippage() 
         external
         whenCallerMultistrategy
-        whenContractNotPaused
         whenSlippageLimitRespected
     {
         uint256 amount = 1_000 ether;
@@ -75,7 +62,6 @@ contract Withdraw_Integration_Concrete_Test is Adapter_Base_Test {
     function test_Withdraw_Exact() 
         external
         whenCallerMultistrategy
-        whenContractNotPaused
         whenSlippageLimitRespected
     {
         uint256 amount = 1_000 ether;
@@ -100,7 +86,6 @@ contract Withdraw_Integration_Concrete_Test is Adapter_Base_Test {
     function test_Withdraw_NegativeSlippage() 
         external
         whenCallerMultistrategy
-        whenContractNotPaused
         whenSlippageLimitRespected
     {
         // Set the slippage limit of the strategy to 1%

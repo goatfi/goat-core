@@ -47,11 +47,6 @@ interface IAdapter {
     /// Only the multistrategy can call it
     function askReport() external;
 
-    /// @notice Sends a report to the Multistrategy after this strategy has been panicked.
-    ///         Reporting any gains or loss based on the balance the could be emergency withdrawn
-    /// @dev This function should only be called after a strategy has been retired.
-    function sendReportPanicked() external;
-
     /// @notice Withdraws `asset` from the strategy.
     /// @dev Only callable by the multistrategy.
     /// @param _amount Amount of tokens to withdraw from the strategy.

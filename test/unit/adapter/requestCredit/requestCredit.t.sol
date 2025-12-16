@@ -16,24 +16,9 @@ contract RequestCredit_Integration_Concrete_Test is Adapter_Base_Test {
         _;
     }
 
-    function test_RevertWhen_ContractIsPaused()
-        external
-        whenCallerIsOwner
-    {
-        vm.prank(users.guardian); strategy.pause();
-        
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        vm.prank(users.manager); strategy.requestCredit();
-    }
-
-    modifier whenNotPaused() {
-        _;
-    }
-
     function test_RequestCredit_NoCredit()
         external
         whenCallerIsOwner
-        whenNotPaused
     {
         uint256 previousTotalAssets = strategy.totalAssets();
 
@@ -52,7 +37,6 @@ contract RequestCredit_Integration_Concrete_Test is Adapter_Base_Test {
     function test_RequestCredit()
         external
         whenCallerIsOwner
-        whenNotPaused
     {   
         uint256 amount = 1_000 ether;
         _userDeposit(users.bob,amount);

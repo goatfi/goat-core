@@ -18,21 +18,9 @@ contract AskReport_Integration_Concrete_Test is Adapter_Base_Test {
         _;
     }
 
-    function test_RevertWhen_ContractPaused() external whenCallerMultistrategy {
-        vm.prank(users.guardian); strategy.pause();
-        
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        vm.prank(address(multistrategy)); strategy.askReport();
-    }
-
-    modifier whenContractNotPaused() {
-        _;
-    }
-
     function test_RevertWhen_SlippageLimitExceeded() 
         external
         whenCallerMultistrategy
-        whenContractNotPaused
     {
         vm.prank(users.manager); strategy.setSlippageLimit(1_000);
         vm.prank(users.manager); strategy.setStakingSlippage(1_500);
@@ -54,7 +42,6 @@ contract AskReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_AskReport_Gain() 
         external
         whenCallerMultistrategy
-        whenContractNotPaused
         whenSlippageLimitRespected
     {
         _requestCredit(1_000 ether);
@@ -70,18 +57,17 @@ contract AskReport_Integration_Concrete_Test is Adapter_Base_Test {
         // Assert the gain gets transferred to the multistrategy
         uint256 actualMultistrategyBalance = IERC20(strategy.asset()).balanceOf(address(multistrategy));
         uint256 expectedMultistrategyBalance = 90 ether;
-        assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
+        assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "askReport, multistrategy balance");
 
         // Assert the strategy has the same balance of totalAssets as totalDebt
         uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 actualStrategyTotalAssets = strategy.totalAssets();
-        assertEq(actualStrategyDebt, actualStrategyTotalAssets, "sendReportPanicked, assets and debt match");
+        assertEq(actualStrategyDebt, actualStrategyTotalAssets, "askReport, assets and debt match");
     }
 
     function test_AskReport_Loss()
         external
         whenCallerMultistrategy
-        whenContractNotPaused
         whenSlippageLimitRespected
     {
         _requestCredit(1_000 ether);
@@ -92,11 +78,11 @@ contract AskReport_Integration_Concrete_Test is Adapter_Base_Test {
         // Assert the multistrategy doesn't get any gain
         uint256 actualMultistrategyBalance = IERC20(strategy.asset()).balanceOf(address(multistrategy));
         uint256 expectedMultistrategyBalance = 0;
-        assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "sendReportPanicked, multistrategy balance");
+        assertEq(actualMultistrategyBalance, expectedMultistrategyBalance, "askReport, multistrategy balance");
 
         // Assert the strategy has the same balance of totalAssets as totalDebt
         uint256 actualStrategyDebt = multistrategy.strategyTotalDebt(address(strategy));
         uint256 actualStrategyTotalAssets = strategy.totalAssets();
-        assertEq(actualStrategyDebt, actualStrategyTotalAssets, "sendReportPanicked, assets and debt match");
+        assertEq(actualStrategyDebt, actualStrategyTotalAssets, "askReport, assets and debt match");
     }
 }

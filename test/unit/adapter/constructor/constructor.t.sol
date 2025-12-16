@@ -16,8 +16,6 @@ contract Constructor_Unit_Test is Adapter_Base_Test {
 
     function test_Constructor_Success() external {
         assertEq(strategy.owner(), users.manager, "owner");
-        assertFalse(strategy.paused(), "paused");
-        assertFalse(strategy.guardians(makeAddr("guardian")), "guardians");
         assertEq(strategy.multistrategy(), address(multistrategy), "multistrategy");
         assertEq(strategy.asset(), address(dai), "asset");
         assertEq(strategy.slippageLimit(), 0, "slippageLimit");
