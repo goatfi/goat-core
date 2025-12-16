@@ -1,7 +1,7 @@
 panic
-├── when the caller is not a guardian
-│   └── it should revert with Unauthorized error
-└── when the caller is a guardian
+├── when the caller is not the multistrategy
+│   └── it should revert with CallerNotMultistrategy error
+└── when the caller is the multistrategy
    ├── it should withdraw as much assets as possible
    ├── it should revoke the allowances of this strategy
    └── it should report to the multistrategy
