@@ -221,6 +221,13 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         emit StrategyMaxDebtDeltaSet(_strategy, _maxDebtDelta);
     }
 
+    /// @inheritdoc IMultistrategyManageable
+    function panicAdapter(address _strategy) external onlyGuardian onlyActiveStrategy(_strategy) returns (uint256) {
+        IAdapter adapter = IAdapter(_strategy);
+        adapter.panic();
+        return adapter.totalAssets();
+    }
+
     /*//////////////////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/

@@ -78,10 +78,4 @@ interface IAdapter {
     ///     - Revoke the allowance that this adapter has given to the underlying strategy.
     ///     - Pauses this contract.
     function panic() external;
-
-    /// @notice Pauses the smart contract.
-    function pause() external;
-
-    /// @notice Unpauses the smart contract.
-    function unpause() external;
 }

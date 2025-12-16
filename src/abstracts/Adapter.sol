@@ -4,14 +4,14 @@ pragma solidity 0.8.30;
 
 import { IERC4626 } from "@openzeppelin/interfaces/IERC4626.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Math } from "@openzeppelin/utils/math/Math.sol";
-import { AdapterAdminable } from "./AdapterAdminable.sol";
 import { IAdapter } from "../interfaces/IAdapter.sol";
 import { IMultistrategy } from "../interfaces/IMultistrategy.sol";
 import { Constants } from "../libraries/Constants.sol";
 import { Errors } from "../libraries/Errors.sol";
 
-abstract contract Adapter is IAdapter, AdapterAdminable {
+abstract contract Adapter is IAdapter, Ownable {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -38,7 +38,7 @@ abstract contract Adapter is IAdapter, AdapterAdminable {
     /// @param _multistrategy Address of the multistrategy this strategy will belongs to.
     /// @param _name Name of the strategy.
     /// @param _id Identifier of the strategy.
-    constructor(address _multistrategy, string memory _name, string memory _id) AdapterAdminable(msg.sender) {
+    constructor(address _multistrategy, string memory _name, string memory _id) Ownable(msg.sender) {
         multistrategy = _multistrategy;
         asset = IERC4626(_multistrategy).asset();
         name = _name;
@@ -83,7 +83,7 @@ abstract contract Adapter is IAdapter, AdapterAdminable {
     //////////////////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IAdapter
-    function requestCredit() external onlyOwner whenNotPaused returns (uint256 creditRequested) {
+    function requestCredit() external onlyOwner returns (uint256 creditRequested) {
         creditRequested = IMultistrategy(multistrategy).requestCredit();
         if(creditRequested > 0) {
             _deposit();
@@ -100,48 +100,32 @@ abstract contract Adapter is IAdapter, AdapterAdminable {
     }
     
     /// @inheritdoc IAdapter
-    function sendReport(uint256 _repayAmount) external onlyOwner whenNotPaused {
+    function sendReport(uint256 _repayAmount) external onlyOwner {
         _sendReport(_repayAmount);
     }
 
     /// @inheritdoc IAdapter
-    function askReport() external onlyMultistrategy whenNotPaused {
+    function askReport() external onlyMultistrategy {
         _sendReport(0);
-    }
-
-    /// @inheritdoc IAdapter
-    function sendReportPanicked() external onlyOwner whenPaused {
-        uint256 currentAssets = _balance();
-        (uint256 gain, uint256 loss) = _calculateGainAndLoss(currentAssets);
-        IMultistrategy(multistrategy).strategyReport(currentAssets - gain, gain, loss);
     }
 
     /// @inheritdoc IAdapter
     /// @dev Any surplus on the withdraw won't be sent to the multistrategy.
     /// It will be eventually reported back as gain when sendReport is called.
-    function withdraw(uint256 _amount) external onlyMultistrategy whenNotPaused returns (uint256 withdrawn) {
+    function withdraw(uint256 _amount) external onlyMultistrategy returns (uint256 withdrawn) {
         _tryWithdraw(_amount);
         withdrawn = Math.min(_amount, _balance());
         IERC20(asset).safeTransfer(multistrategy, withdrawn);
     }
 
     /// @inheritdoc IAdapter
-    function panic() external onlyGuardian {
+    function panic() external onlyMultistrategy {
         _emergencyWithdraw();
         _revokeAllowances();
-        _pause();
-    }
 
-    /// @inheritdoc IAdapter
-    function pause() external onlyGuardian {
-        _revokeAllowances();
-        _pause();
-    }
-
-    /// @inheritdoc IAdapter
-    function unpause() external onlyOwner {
-        _unpause();
-        _giveAllowances();
+        uint256 currentAssets = _balance();
+        (uint256 gain, uint256 loss) = _calculateGainAndLoss(currentAssets);
+        IMultistrategy(multistrategy).strategyReport(currentAssets - gain, gain, loss);
     }
 
     /*//////////////////////////////////////////////////////////////////////////
