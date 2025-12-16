@@ -43,6 +43,7 @@ contract PanicAdapter_Unit_Concrete_Test is Multistrategy_Base_Test {
         MockAdapter adapter = _createAndAddAdapter(5_000,100 ether, type(uint256).max);
         _userDeposit(users.alice, 1_000 ether);
         vm.prank(adapter.owner()); adapter.requestCredit();
+        assertGt(multistrategy.strategyTotalDebt(address(adapter)), 0, "panicAdapter, initial total debt");
 
         vm.prank(users.guardian); multistrategy.panicAdapter(address(adapter));
 
@@ -50,6 +51,8 @@ contract PanicAdapter_Unit_Concrete_Test is Multistrategy_Base_Test {
         assertEq(multistrategy.getStrategyParameters(address(adapter)).debtRatio, 0, "panicAdapter, debt ratio");
         // Assert the total assets of the adapter is 0
         assertEq(adapter.totalAssets(), 0, "panicAdapter, total assets");
+        // Assert the total debt of the adapter is 0
+        assertEq(multistrategy.strategyTotalDebt(address(adapter)), 0, "panicAdapter, total debt"); 
     }
 
     modifier whenCallerIsOwner() {
@@ -64,6 +67,7 @@ contract PanicAdapter_Unit_Concrete_Test is Multistrategy_Base_Test {
         MockAdapter adapter = _createAndAddAdapter(5_000,100 ether, type(uint256).max);
         _userDeposit(users.alice, 1_000 ether); 
         vm.prank(adapter.owner()); adapter.requestCredit();
+        assertGt(multistrategy.strategyTotalDebt(address(adapter)), 0, "panicAdapter by owner, initial total debt");
 
         vm.prank(users.owner); multistrategy.panicAdapter(address(adapter));
 
@@ -71,5 +75,7 @@ contract PanicAdapter_Unit_Concrete_Test is Multistrategy_Base_Test {
         assertEq(multistrategy.getStrategyParameters(address(adapter)).debtRatio, 0, "panicAdapter by owner, debt ratio");
         // Assert the total assets of the adapter is 0
         assertEq(adapter.totalAssets(), 0, "panicAdapter by owner, total assets");
+        // Assert the total debt of the adapter is 0
+        assertEq(multistrategy.strategyTotalDebt(address(adapter)), 0, "panicAdapter by owner, total debt");    
     }
 }

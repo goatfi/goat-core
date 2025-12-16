@@ -14,7 +14,7 @@ contract Constructor_Unit_Test is Adapter_Base_Test {
         adapter = new MockAdapter(makeAddr("dummy"));
     }
 
-    function test_Constructor_Success() external {
+    function test_Constructor_Success() external view {
         assertEq(strategy.owner(), users.manager, "owner");
         assertEq(strategy.multistrategy(), address(multistrategy), "multistrategy");
         assertEq(strategy.asset(), address(dai), "asset");

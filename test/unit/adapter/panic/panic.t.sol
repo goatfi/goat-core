@@ -13,12 +13,18 @@ contract Panic_Integration_Concrete_Test is Adapter_Base_Test {
     }
 
     modifier whenCallerMultistrategy() {
-        vm.prank(address(multistrategy));
         _;
     }
 
     function test_Panic() external whenCallerMultistrategy {
-        strategy.panic();
+        _userDeposit(users.alice, 1_000 ether);
+        vm.prank(strategy.owner()); strategy.requestCredit();
+        assertGt(multistrategy.strategyTotalDebt(address(strategy)), 0, "panic, initial total debt");
+
+        // Set the debt ratio of the strategy 0
+        vm.prank(users.owner); multistrategy.setStrategyDebtRatio(address(strategy), 0);
+
+        vm.prank(address(multistrategy)); strategy.panic();
 
         // Assert emergencyWithdraw has been performed
         uint256 actualStakingBalance = strategy.totalAssets();
