@@ -24,25 +24,9 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
         _;
     }
 
-    function test_RevertWhen_ContractPaused() 
-        external
-        whenCallerOwner
-    {
-        vm.prank(users.guardian); strategy.pause();
-        
-        // Expect it to revert
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        vm.prank(users.manager); strategy.sendReport(0);
-    }
-
-    modifier whenContractNotPaused() {
-        _;
-    }
-
     function test_RevertWhen_SlippageLimitNotRespected()
         external
         whenCallerOwner
-        whenContractNotPaused
     {
         vm.prank(users.manager); strategy.setSlippageLimit(1_000);
         vm.prank(users.manager); strategy.setStakingSlippage(1_500);
@@ -73,7 +57,6 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_SendReport_ZeroRepay_WithGain() 
         external
         whenCallerOwner
-        whenContractNotPaused
         whenSlippageLimitRespected
         whenStrategyMadeGain
     {
@@ -93,7 +76,6 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_SendReport_ZeroRepay_WithLoss() 
         external
         whenCallerOwner
-        whenContractNotPaused
         whenSlippageLimitRespected
         whenStrategyMadeLoss
     {
@@ -113,7 +95,6 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_SendReport_RepayAll_NoExcessDebt_WithGain()
         external
         whenCallerOwner
-        whenContractNotPaused
         whenSlippageLimitRespected
         whenStrategyMadeGain
     {
@@ -133,7 +114,6 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_SendReport_RepayAll_NoExcessDebt_WithLoss()
         external
         whenCallerOwner
-        whenContractNotPaused
         whenSlippageLimitRespected
         whenStrategyMadeLoss
     {
@@ -159,7 +139,6 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_SendReport_RepayAll_WithDebtExcessDebt_WithGain()
         external
         whenCallerOwner
-        whenContractNotPaused
         whenSlippageLimitRespected
         whenStrartegyHasDebtExcess
         whenStrategyMadeGain
@@ -180,7 +159,6 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_SendReport_RepayAll_WithDebtExcessDebt_WithLoss()
         external
         whenCallerOwner
-        whenContractNotPaused
         whenSlippageLimitRespected
         whenStrartegyHasDebtExcess
         whenStrategyMadeLoss
@@ -201,7 +179,6 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_SendReport_RepayExact_WithDebtExcess_WithGain() 
         external
         whenCallerOwner
-        whenContractNotPaused
         whenSlippageLimitRespected
         whenStrartegyHasDebtExcess
         whenStrategyMadeGain
@@ -223,7 +200,6 @@ contract SendReport_Integration_Concrete_Test is Adapter_Base_Test {
     function test_SendReport_RepayExact_WithDebtExcess_WithLoss() 
         external
         whenCallerOwner
-        whenContractNotPaused
         whenSlippageLimitRespected
         whenStrartegyHasDebtExcess
         whenStrategyMadeLoss

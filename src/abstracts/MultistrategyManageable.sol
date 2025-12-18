@@ -194,13 +194,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
 
     /// @inheritdoc IMultistrategyManageable
     function setStrategyDebtRatio(address _strategy, uint256 _debtRatio) external onlyManager onlyActiveStrategy(_strategy) {
-        uint256 newDebtRatio = debtRatio - strategies[_strategy].debtRatio + _debtRatio;
-        require(newDebtRatio <= Constants.MAX_BPS, Errors.DebtRatioAboveMaximum(newDebtRatio));
-
-        debtRatio = newDebtRatio;
-        strategies[_strategy].debtRatio = _debtRatio;
-
-        emit StrategyDebtRatioSet(_strategy, _debtRatio);
+        _setDebtRatio(_strategy, _debtRatio);
     }
 
     /// @inheritdoc IMultistrategyManageable
@@ -221,9 +215,28 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
         emit StrategyMaxDebtDeltaSet(_strategy, _maxDebtDelta);
     }
 
+    /// @inheritdoc IMultistrategyManageable
+    function panicAdapter(address _strategy) external onlyGuardian onlyActiveStrategy(_strategy) {
+        _setDebtRatio(_strategy, 0);
+        IAdapter(_strategy).panic();
+    }
+
     /*//////////////////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Sets the debt ratio for a strategy.
+    /// @param _strategy The strategy address.
+    /// @param _debtRatio The new debt ratio.
+    function _setDebtRatio(address _strategy, uint256 _debtRatio) internal {
+        uint256 newDebtRatio = debtRatio - strategies[_strategy].debtRatio + _debtRatio;
+        require(newDebtRatio <= Constants.MAX_BPS, Errors.DebtRatioAboveMaximum(newDebtRatio));
+
+        debtRatio = newDebtRatio;
+        strategies[_strategy].debtRatio = _debtRatio;
+
+        emit StrategyDebtRatioSet(_strategy, _debtRatio);
+    }
 
     /// @notice Validates the order of strategies for withdrawals.
     /// @param _strategies The array of strategy addresses to validate.

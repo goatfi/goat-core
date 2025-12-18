@@ -139,4 +139,8 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @param _strategy Address of the strategy.
     /// @param _maxDebtDelta Upper limit of the change of debt.
     function setStrategyMaxDebtDelta(address _strategy, uint256 _maxDebtDelta) external;
+
+    /// @notice Panics an adapter.
+    /// @param _strategy Address of the strategy.
+    function panicAdapter(address _strategy) external;
 }

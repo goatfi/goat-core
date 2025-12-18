@@ -1,7 +1,5 @@
 constructor.t.sol
     ├── it should set owner
-    ├── it should set guardians
-    ├── it should set paused
     ├── it should set multistrategy
     ├── it should set asset
     ├── it should set slippageLimit

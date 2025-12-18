@@ -203,6 +203,14 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     {
         _report(_debtRepayment, _gain, _loss);
     }
+    
+    /// @inheritdoc IMultistrategy
+    function rescueToken(address _token) external onlyGuardian {
+        require(_token != asset(), Errors.InvalidAddress(_token));
+
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(msg.sender, balance);
+    }
 
     /*//////////////////////////////////////////////////////////////////////////
                             INTERNAL CONSTANT FUNCTIONS
