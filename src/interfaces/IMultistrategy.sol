@@ -54,4 +54,9 @@ interface IMultistrategy is IMultistrategyManageable {
     /// @param _gain Amount that the strategy has realized as a gain since the last report and will send it to this Multistrategy as earnings. 
     /// @param _loss Amount that the strategy has realized as a loss since the last report. 
     function strategyReport(uint256 _debtRepayment, uint256 _gain, uint256 _loss) external;
+
+    /// @notice Rescue any token that is not the Multistrategy's asset.
+    /// @dev Can only be called by a guardian.
+    /// @param token Address of the token to rescue.
+    function rescueToken(address token) external;
 }

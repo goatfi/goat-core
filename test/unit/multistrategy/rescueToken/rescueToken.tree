@@ -1,0 +1,8 @@
+rescueToken.t.sol
+├── when the caller is not a guardian
+│   └── it should revert with Unauthorized error
+└── when the caller is a guardian
+    ├── when the token is the multistrategy's asset
+    │   └── it should revert with InvalidAddress error
+    └── when the token is not the multistrategy's asset
+        └── it should transfer the token balance to the caller
