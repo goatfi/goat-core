@@ -39,18 +39,20 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
 
     /// @dev Transfers ownership to the deployer of this contract
     /// @param _asset Address of the token used in this Multistrategy
+    /// @param _owner Address of the initial Multistrategy owner
     /// @param _manager Address of the initial Multistrategy manager
     /// @param _protocolFeeRecipient Address that will receive the performance fees
     /// @param _name Name of this Multistrategy receipt token
     /// @param _symbol Symbol of this Multistrategy receipt token
     constructor(
         address _asset,
+        address _owner,
         address _manager,
         address _protocolFeeRecipient,
         string memory _name,
         string memory _symbol
     ) 
-        MultistrategyManageable(msg.sender, _manager, _protocolFeeRecipient)
+        MultistrategyManageable(_owner, _manager, _protocolFeeRecipient)
         ERC4626(IERC20(_asset))
         ERC20(_name, _symbol)
     {   

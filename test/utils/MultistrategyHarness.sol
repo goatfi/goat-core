@@ -6,6 +6,7 @@ import { Multistrategy } from "src/Multistrategy.sol";
 contract MultistrategyHarness is Multistrategy {
     constructor(
         address _asset,
+        address _owner,
         address _manager,
         address _protocolFeeRecipient,
         string memory _name, 
@@ -13,6 +14,7 @@ contract MultistrategyHarness is Multistrategy {
     ) 
         Multistrategy(
             _asset,
+            _owner,
             _manager,
             _protocolFeeRecipient,
             _name,

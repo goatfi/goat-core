@@ -87,6 +87,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
     {
         vm.prank(users.owner); Multistrategy newMultistrategy = new Multistrategy({
             _asset: address(dai),
+            _owner: users.owner,
             _manager: users.manager,
             _protocolFeeRecipient: users.feeRecipient,
             _name: "Multistrategy",

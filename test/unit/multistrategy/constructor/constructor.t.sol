@@ -9,6 +9,7 @@ import { Errors } from "src/libraries/Errors.sol";
 contract Constructor_Integration_Concrete_Test is Test {
     MockERC20 asset = new MockERC20("Test Token", "TEST");
     address manager = makeAddr("manager");
+    address owner = makeAddr("owner");
     address protocolFeeRecipient;
     string name = "Test Multistrategy";
     string symbol = "TMULT";
@@ -17,6 +18,7 @@ contract Constructor_Integration_Concrete_Test is Test {
         vm.expectRevert(abi.encodeWithSelector(Errors.ZeroAddress.selector));
         new Multistrategy({
             _asset: address(asset),
+            _owner: owner,
             _manager: manager,
             _protocolFeeRecipient: protocolFeeRecipient,
             _name: name,
@@ -32,13 +34,14 @@ contract Constructor_Integration_Concrete_Test is Test {
     function test_Constructor_Success() external whenProtocolFeeRecipientNotZero {
         Multistrategy multistrategy = new Multistrategy({
             _asset: address(asset),
+            _owner: owner,
             _manager: manager,
             _protocolFeeRecipient: protocolFeeRecipient,
             _name: name,
             _symbol: symbol
         });
 
-        assertEq(multistrategy.owner(), address(this), "owner");
+        assertEq(multistrategy.owner(), owner, "owner");
         assertEq(multistrategy.manager(), manager, "manager");
         assertEq(multistrategy.protocolFeeRecipient(), protocolFeeRecipient, "protocolFeeRecipient");
         assertEq(multistrategy.performanceFee(), 1000, "performanceFee");

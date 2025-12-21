@@ -85,16 +85,18 @@ contract ConvertToShares_Integration_Concrete_Test is Multistrategy_Base_Test {
 
         multistrategyLowDecimals = new Multistrategy({
             _asset: address(usdc),
+            _owner: users.owner,
             _manager: users.manager,
             _protocolFeeRecipient: users.feeRecipient,
             _name: "Goat USDC",
             _symbol: "GUSDC"
         });
 
+        vm.startPrank(users.owner);
         multistrategyLowDecimals.enableGuardian(users.guardian);
         multistrategyLowDecimals.setDepositLimit(100_000 * 10 ** usdc.decimals());
         multistrategyLowDecimals.setPerformanceFee(1000);
-        multistrategyLowDecimals.transferOwnership(users.owner);
+        vm.stopPrank();
 
         vm.label({ account: address(multistrategyLowDecimals), newLabel: "MultistrategyLowDecimals" });
     }

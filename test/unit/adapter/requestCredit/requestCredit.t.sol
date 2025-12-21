@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 
 import { Adapter_Base_Test } from "../../../shared/Adapter_Base.t.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
-import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 
 contract RequestCredit_Integration_Concrete_Test is Adapter_Base_Test {
     function test_RevertWhen_CallerNotOwner() external {

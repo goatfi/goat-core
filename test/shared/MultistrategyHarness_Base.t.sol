@@ -18,16 +18,17 @@ contract MultistrategyHarness_Base_Test is Base_Test {
     function deployMultistrategy() internal override {
         multistrategy = new MultistrategyHarness({
             _asset: address(dai),
+            _owner: users.owner,
             _manager: users.manager,
             _protocolFeeRecipient: users.feeRecipient,
             _name: "Goat DAI",
             _symbol: "GDAI"
         });
-
+        vm.startPrank(users.owner);
         multistrategy.enableGuardian(users.guardian);
         multistrategy.setDepositLimit(100_000 * 10 ** dai.decimals());
         multistrategy.setPerformanceFee(1000);
-        multistrategy.transferOwnership(users.owner);
+        vm.stopPrank();
 
         vm.label({ account: address(multistrategy), newLabel: "Multistrategy" });
     }
