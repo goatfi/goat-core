@@ -6,10 +6,11 @@ import { Adapter } from "src/abstracts/Adapter.sol";
 abstract contract AdapterHarness is Adapter {
 
     constructor(
+        address _owner,
         address _multistrategy,
         string memory _name,
         string memory _id
-    ) Adapter(_multistrategy, _name, _id) {}
+    ) Adapter(_owner, _multistrategy, _name, _id) {}
 
     function balance() external view returns (uint256) {
         return _balance();

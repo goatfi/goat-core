@@ -20,9 +20,10 @@ contract MockAdapter is AdapterHarness {
     //////////////////////////////////////////////////////////////////////////*/
 
     constructor(
+        address _owner,
         address _multistrategy
     ) 
-        AdapterHarness(_multistrategy, "Mock", "MOCK") 
+        AdapterHarness(_owner, _multistrategy, "Mock", "MOCK") 
     {
         vault = new MockERC4626(asset, "Staked DAI", "sDAI", false, 0);
         _giveAllowances();

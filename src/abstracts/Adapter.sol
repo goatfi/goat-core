@@ -35,10 +35,16 @@ abstract contract Adapter is IAdapter, Ownable {
     //////////////////////////////////////////////////////////////////////////*/
     
     /// @dev Reverts if `_asset` doesn't match `asset` on the Multistrategy.
-    /// @param _multistrategy Address of the multistrategy this strategy will belongs to.
-    /// @param _name Name of the strategy.
-    /// @param _id Identifier of the strategy.
-    constructor(address _multistrategy, string memory _name, string memory _id) Ownable(msg.sender) {
+    /// @param _owner Address of the initial owner of this adapter.
+    /// @param _multistrategy Address of the multistrategy this adapter will belongs to.
+    /// @param _name Name of the adapter.
+    /// @param _id Identifier of the adapter.
+    constructor(
+        address _owner,
+        address _multistrategy, 
+        string memory _name, 
+        string memory _id
+    ) Ownable(_owner) {
         multistrategy = _multistrategy;
         asset = IERC4626(_multistrategy).asset();
         name = _name;
@@ -150,7 +156,7 @@ abstract contract Adapter is IAdapter, Ownable {
     }
 
     /// @notice Returns the amount of `asset` the underlying strategy holds.
-    /// @dev In the case this strategy has swapped `asset` for another asset, it should return the most approximate value.
+    /// @dev In the case this adapter has swapped `asset` for another asset, it should return the most approximate value.
     /// Child contract must implement the logic to calculate the amount of assets.
     function _totalAssets() internal virtual view returns (uint256);
 
@@ -162,8 +168,8 @@ abstract contract Adapter is IAdapter, Ownable {
                             INTERNAL NON-CONSTANT FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
 
-    /// @notice Sends a report on the strategy's performance.
-    /// @param _repayAmount The amount to be repaid to the multi-strategy.
+    /// @notice Sends a report on the adapter's performance.
+    /// @param _repayAmount The amount to be repaid to the multistrategy.
     function _sendReport(uint256 _repayAmount) internal {
         (uint256 gain, uint256 loss) = _calculateGainAndLoss(_totalAssets());
         uint256 exceedingDebt = IMultistrategy(multistrategy).debtExcess(address(this));
@@ -176,8 +182,8 @@ abstract contract Adapter is IAdapter, Ownable {
         IMultistrategy(multistrategy).strategyReport(_balance() - gain, gain, loss);
     }
 
-    /// @notice Attempts to withdraw a specified amount from the strategy.
-    /// @param _amount The amount to withdraw from the strategy.
+    /// @notice Attempts to withdraw a specified amount from the adapter.
+    /// @param _amount The amount to withdraw from the adapter.
     function _tryWithdraw(uint256 _amount) internal {
         if(_amount == 0 || _amount <= _balance()) return;
 
@@ -204,7 +210,7 @@ abstract contract Adapter is IAdapter, Ownable {
     /// The emergency withdraw process won't have a slippage check, as it is in an emergency situation.
     function _emergencyWithdraw() internal virtual;
 
-    /// @dev Grants allowance for `asset` to the contracts used by the strategy adapter.
+    /// @dev Grants allowance for `asset` to the contracts used by the adapter.
     /// It should be overridden by derived contracts to specify the exact contracts and amounts for the allowances.
     function _giveAllowances() internal virtual;
 

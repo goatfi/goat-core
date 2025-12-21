@@ -11,7 +11,7 @@ contract Constructor_Unit_Test is Adapter_Base_Test {
 
     function test_RevertWhen_MultistrategyDoesNOTImplementERC4626() public {
         vm.expectRevert();
-        adapter = new MockAdapter(makeAddr("dummy"));
+        adapter = new MockAdapter(users.manager, makeAddr("dummy"));
     }
 
     function test_Constructor_Success() external view {
