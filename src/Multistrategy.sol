@@ -45,12 +45,13 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @param _symbol Symbol of this Multistrategy receipt token
     constructor(
         address _asset,
+        address _owner,
         address _manager,
         address _protocolFeeRecipient,
         string memory _name,
         string memory _symbol
     ) 
-        MultistrategyManageable(msg.sender, _manager, _protocolFeeRecipient)
+        MultistrategyManageable(_owner, _manager, _protocolFeeRecipient)
         ERC4626(IERC20(_asset))
         ERC20(_name, _symbol)
     {   

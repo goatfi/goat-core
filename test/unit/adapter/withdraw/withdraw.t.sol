@@ -3,7 +3,6 @@
 pragma solidity ^0.8.27;
 
 import { Adapter_Base_Test } from "../../../shared/Adapter_Base.t.sol";
-import { Pausable } from "@openzeppelin/utils/Pausable.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
 contract Withdraw_Integration_Concrete_Test is Adapter_Base_Test {

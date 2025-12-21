@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.27;
 
-import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 import { MockERC20 } from "../../../mocks/MockERC20.sol";
 import { Multistrategy_Base_Test } from "../../../shared/Multistrategy_Base.t.sol";
 import { Errors } from "src/libraries/Errors.sol";
