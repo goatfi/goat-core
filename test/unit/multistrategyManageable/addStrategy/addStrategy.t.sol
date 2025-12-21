@@ -95,7 +95,7 @@ contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
         });
         
         // Deploy a mock strategy for the usdt multistrategy
-        vm.prank(users.manager); MockAdapter strategyWithWrongMulti = new MockAdapter(address(newMultistrategy));
+        MockAdapter strategyWithWrongMulti = new MockAdapter(users.manager, address(newMultistrategy));
         
         vm.expectRevert(abi.encodeWithSelector(Errors.InvalidStrategy.selector, address(strategyWithWrongMulti)));
         vm.prank(users.owner); multistrategy.addStrategy(address(strategyWithWrongMulti), debtRatio, minDebtDelta, maxDebtDelta);
