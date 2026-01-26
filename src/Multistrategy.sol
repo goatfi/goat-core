@@ -484,6 +484,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(feesCollected > 0) IERC20(asset()).safeTransfer(protocolFeeRecipient, feesCollected);
 
         emit StrategyReported(msg.sender, debtToRepay, _gain, _loss);
+        emit Earn(convertToAssets(1 ether), lockedProfit);
     }
 
     /// @notice Loops through the active strategies and settles any unrealized loss.
