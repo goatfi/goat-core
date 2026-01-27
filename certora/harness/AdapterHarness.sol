@@ -13,9 +13,10 @@ contract AdapterHarness is Adapter {
     VaultHarness public vault;
 
     constructor(
+        address _owner,
         address _multistrategy
     ) 
-        Adapter(_multistrategy, "Mock", "MOCK") 
+        Adapter(_owner, _multistrategy, "Mock", "MOCK") 
     {
         vault = new VaultHarness(ERC20(asset), "Staked DAI", "sDAI");
         _giveAllowances();

@@ -25,7 +25,6 @@ function assetToSharesRelationshipRequirements(env e) {
 
 function nonPausedRequirements() {
     require (!multistrategy.paused(), "Multistrategy not paused");
-    require (!adapter.paused(), "Adapter not paused");
 }
 
 function nonReenteredRequirement() {

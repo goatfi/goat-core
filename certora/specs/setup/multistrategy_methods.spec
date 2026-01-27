@@ -16,6 +16,7 @@ methods {
     function multistrategy.activeStrategies() external returns uint256 envfree;
     function multistrategy.paused() external returns bool envfree;
     function multistrategy.reentrancyGuardEntered() external returns bool envfree;
+    function multistrategy.depositLimit() external returns uint256 envfree;
     
     function convertToAssets(uint256) external returns uint256;
     function multistrategy.maxDeposit(address) external returns uint256;
