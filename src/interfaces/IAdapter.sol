@@ -21,14 +21,14 @@ interface IAdapter {
 
     /// @notice Returns the current slippage limit in basis points (BPS).
     /// @dev The slippage limit is expressed in BPS, where 10,000 BPS equals 100%.
-    function slippageLimit() external view returns (uint256);
+    function slippageLimit() external view returns (uint16);
 
     /// @notice Sets the maximum allowable slippage limit for withdrawals.
     /// @dev Slippage limit is expressed in basis points (BPS), where 10,000 BPS equals 100%.
     /// This limit represents the tolerated difference between the expected withdrawal amount
     /// and the actual amount withdrawn from the strategy.
     /// @param _slippageLimit The maximum allowable slippage in basis points.
-    function setSlippageLimit(uint256 _slippageLimit) external;
+    function setSlippageLimit(uint16 _slippageLimit) external;
 
     /// @notice Requests a credit to the multistrategy. The multistrategy will send the
     /// maximum amount of credit available for this strategy.

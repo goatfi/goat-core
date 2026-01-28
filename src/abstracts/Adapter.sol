@@ -22,7 +22,7 @@ abstract contract Adapter is IAdapter, Ownable {
     address public immutable asset;
 
     /// @inheritdoc IAdapter
-    uint256 public slippageLimit;
+    uint16 public slippageLimit;
 
     /// @notice Name of this Strategy Adapter
     string public name;
@@ -97,7 +97,7 @@ abstract contract Adapter is IAdapter, Ownable {
     }
 
     /// @inheritdoc IAdapter
-    function setSlippageLimit(uint256 _slippageLimit) external onlyOwner {
+    function setSlippageLimit(uint16 _slippageLimit) external onlyOwner {
         require(_slippageLimit <= Constants.MAX_BPS, Errors.SlippageLimitExceeded(_slippageLimit));
         
         slippageLimit = _slippageLimit;
