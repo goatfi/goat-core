@@ -191,7 +191,7 @@ abstract contract Adapter is IAdapter, Ownable {
         _withdraw(_amount - _balance());
 
         uint256 currentBalance = _balance();
-        uint256 desiredBalance = _amount.mulDiv(Constants.MAX_BPS - slippageLimit, Constants.MAX_BPS);
+        uint256 desiredBalance = _amount.mulDiv(Constants.MAX_BPS - slippageLimit, Constants.MAX_BPS, Math.Rounding.Ceil);
         
         require(currentBalance >= desiredBalance, Errors.SlippageCheckFailed(desiredBalance, currentBalance));
     }

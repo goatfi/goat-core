@@ -80,7 +80,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @inheritdoc IERC4626
     /// @dev Limited by the deposit limit
     function maxMint(address _receiver) public view override returns (uint256) {
-        return _convertToShares(maxDeposit(_receiver), Math.Rounding.Floor);
+        return convertToShares(maxDeposit(_receiver));
     }
 
     /// @inheritdoc IERC4626
@@ -107,7 +107,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @inheritdoc IERC4626
     /// @dev Pessimistic, returns the amount of assets at max slippage.
     function previewRedeem(uint256 shares) public view override returns (uint256) {
-        uint256 baseAssets = _convertToAssets(shares, Math.Rounding.Floor);
+        uint256 baseAssets = convertToAssets(shares);
         return baseAssets.mulDiv(Constants.MAX_BPS - slippageLimit, Constants.MAX_BPS, Math.Rounding.Floor);
     }
 
@@ -182,9 +182,9 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 maxShares = maxRedeem(_owner);
         require(_shares <= maxShares, ERC4626ExceededMaxRedeem(_owner, _shares, maxShares));
 
-        uint256 desiredAssets = _convertToAssets(_shares, Math.Rounding.Floor);
+        uint256 desiredAssets = convertToAssets(_shares);
         _settleUnrealizedLosses();
-        uint256 assets = _convertToAssets(_shares, Math.Rounding.Floor);
+        uint256 assets = convertToAssets(_shares);
 
         _checkSlippage(desiredAssets, assets, _shares, _shares);
         _exit(msg.sender, _receiver, _owner, assets, _shares);
@@ -245,27 +245,24 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @return The amount of credit available for the given strategy.
     function _creditAvailable(address _strategy) internal view returns (uint256) {
         uint256 mTotalAssets = totalAssets();
-        uint256 mDebtLimit = debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS);
-        uint256 mTotalDebt = totalDebt;
+        uint256 mDebtLimit = debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS, Math.Rounding.Floor);
 
-        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS);
+        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS, Math.Rounding.Floor);
         uint256 sTotalDebt = strategies[_strategy].totalDebt;
-        uint256 sMinDebtDelta = strategies[_strategy].minDebtDelta;
-        uint256 sMaxDebtDelta = strategies[_strategy].maxDebtDelta;
 
-        if(sTotalDebt >= sDebtLimit || mTotalDebt >= mDebtLimit){
+        if(sTotalDebt >= sDebtLimit || totalDebt >= mDebtLimit){
             return 0;
         }
 
         uint256 credit = sDebtLimit - sTotalDebt;
-        uint256 maxAvailableCredit = mDebtLimit - mTotalDebt;
+        uint256 maxAvailableCredit = mDebtLimit - totalDebt;
         credit = Math.min(credit, maxAvailableCredit);
 
         // Bound to the minimum and maximum borrow limits
-        if(credit < sMinDebtDelta) {
+        if(credit < strategies[_strategy].minDebtDelta) {
             return 0;
         } else {
-            return Math.min(credit, sMaxDebtDelta);
+            return Math.min(credit, strategies[_strategy].maxDebtDelta);
         }
     }
 
@@ -277,7 +274,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             return strategies[_strategy].totalDebt;
         }
 
-        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(totalAssets(), Constants.MAX_BPS);
+        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(totalAssets(), Constants.MAX_BPS, Math.Rounding.Floor);
         uint256 sTotalDebt = strategies[_strategy].totalDebt;
 
         if(sTotalDebt <= sDebtLimit) {
@@ -302,7 +299,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         // 3 days in seconds * LOCKED_PROFIT_DEGRADATION = 1 ether
         uint256 lockedFundsRatio = (block.timestamp - lastReport) * LOCKED_PROFIT_DEGRADATION;
         if(lockedFundsRatio < 1 ether) {
-            newLockedProfit = lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, 1 ether);
+            newLockedProfit = lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, 1 ether, Math.Rounding.Floor);
         }
         return newLockedProfit;
     }
@@ -321,8 +318,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if (_actualAssets == 0 || _actualShares == 0) revert Errors.SlippageCheckFailed(Constants.MAX_BPS, slippageLimit);
         if (_expectedAssets == 0 || _expectedShares == 0) return;
         
-        uint256 expectedExchangeRate = _expectedAssets.mulDiv(10**36, _expectedShares);
-        uint256 actualExchangeRate = _actualAssets.mulDiv(10**36, _actualShares);
+        uint256 expectedExchangeRate = _expectedAssets.mulDiv(10**36, _expectedShares, Math.Rounding.Floor);
+        uint256 actualExchangeRate = _actualAssets.mulDiv(10**36, _actualShares, Math.Rounding.Floor);
         uint256 slippage = 
             expectedExchangeRate > actualExchangeRate ? 
             (expectedExchangeRate - actualExchangeRate).mulDiv(Constants.MAX_BPS, expectedExchangeRate, Math.Rounding.Ceil)
@@ -340,7 +337,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         for(uint256 i = 0; i < nStrategies; ++i){
             address strategy = withdrawOrder[i];
             (uint256 gain, uint256 loss) = IAdapter(strategy).currentPnL();
-            totalProfit += gain.mulDiv(Constants.MAX_BPS - performanceFee, Constants.MAX_BPS);
+            totalProfit += gain.mulDiv(Constants.MAX_BPS - performanceFee, Constants.MAX_BPS, Math.Rounding.Floor);
             totalLoss += loss;
         }
 
@@ -464,7 +461,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(_loss > 0) _settleLoss(msg.sender, _loss);
         if(_gain > 0) {
             strategies[msg.sender].totalGain += _gain;
-            feesCollected = _gain.mulDiv(performanceFee, Constants.MAX_BPS);
+            feesCollected = _gain.mulDiv(performanceFee, Constants.MAX_BPS, Math.Rounding.Floor);
             profit = _gain - feesCollected;
         } 
 
