@@ -53,21 +53,21 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
 
     /// @notice Fee on the yield generated (in BPS).
     /// @dev Performance fee is taken on `strategyReport()` function on the Multistrategy contract.
-    function performanceFee() external view returns (uint256);
+    function performanceFee() external view returns (uint16);
 
     /// @notice Limit of assets that can be deposited in the Multistrategy
     function depositLimit() external view returns (uint256);
 
     /// @notice Debt ratio of the multistrategy across all strategies (in BPS).
     /// @dev The debt ratio cannot exceed 10_000 BPS (100 %).
-    function debtRatio() external view returns (uint256);
+    function debtRatio() external view returns (uint16);
 
     /// @notice The amount of debt among all active strategies.
     function totalDebt() external view returns (uint256);
 
     /// @notice Returns the current slippage limit in basis points (BPS).
     /// @dev The slippage limit is expressed in BPS, where 10,000 BPS equals 100%.
-    function slippageLimit() external view returns (uint256);
+    function slippageLimit() external view returns (uint16);
 
     /// @notice Amount of active strategies.
     function activeStrategies() external view returns (uint256);
@@ -88,7 +88,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @dev Reverts if `performanceFee` is above MAX_PERFORMANCE_FEE
     /// @dev Emits a `SetPerformanceFee` event.
     /// @param _performanceFee New performance fee.
-    function setPerformanceFee(uint256 _performanceFee) external;
+    function setPerformanceFee(uint16 _performanceFee) external;
 
     /// @notice Sets the deposit limit.
     /// @dev Emits a `SetDepositLimit` event.
@@ -98,7 +98,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @notice Sets the slippage limit of this Multistrategy.
     /// @dev The slippage limit is expressed in BPS, where 10,000 BPS equals 100%.
     /// @param _slippageLimit New slippage limit.
-    function setSlippageLimit(uint256 _slippageLimit) external;
+    function setSlippageLimit(uint16 _slippageLimit) external;
 
     /// @notice Sets the withdraw order. First position in the array will be the first strategy that it will get the funds withdrawn
     /// @dev It will revert if a strategy in the array is not active or if the array contains duplicate addresses.
@@ -113,7 +113,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @param _maxDebtDelta Upper limit on the increase of debt.
     function addStrategy(
         address _strategy,
-        uint256 _debtRatio,
+        uint16 _debtRatio,
         uint256 _minDebtDelta,
         uint256 _maxDebtDelta
     ) external;
@@ -125,7 +125,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @notice Change the debt ratio of a strategy.
     /// @param _strategy Address of the strategy.
     /// @param _debtRatio New debt ratio.
-    function setStrategyDebtRatio(address _strategy, uint256 _debtRatio) external;
+    function setStrategyDebtRatio(address _strategy, uint16 _debtRatio) external;
 
     /// @notice Change the minimum amount of debt a strategy can take.
     /// @dev Used to limit the minimum amount of debt a strategy should take. 

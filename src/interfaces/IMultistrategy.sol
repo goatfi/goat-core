@@ -23,10 +23,10 @@ interface IMultistrategy is IMultistrategyManageable {
     event Earn(uint256 pricePerShare, uint256 lockedProfit);
 
     /// @notice Timestamp of the last report made by a strategy.
-    function lastReport() external view returns (uint256);
+    function lastReport() external view returns (uint40);
 
     /// @notice Amount of tokens that are locked as "locked profit" and can't be withdrawn.
-    function lockedProfit() external view returns (uint256);
+    function lockedProfit() external view returns (uint216);
 
     /// @notice Returns the amount of tokens a strategy can borrow from this Multistrategy.
     /// @param strategy Address of the strategy we want to know the credit available for.

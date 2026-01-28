@@ -12,6 +12,7 @@ import { MultistrategyManageable } from "./abstracts/MultistrategyManageable.sol
 import { IMultistrategy } from "./interfaces/IMultistrategy.sol";
 import { IAdapter } from "./interfaces/IAdapter.sol";
 import { Constants } from "./libraries/Constants.sol";
+import { DataTypes } from "./libraries/DataTypes.sol";
 import { Errors } from "./libraries/Errors.sol";
 
 contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, ReentrancyGuard {
@@ -28,10 +29,10 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     uint256 public immutable LOCKED_PROFIT_DEGRADATION;
 
     /// @inheritdoc IMultistrategy
-    uint256 public lastReport;
+    uint40 public lastReport;
     
     /// @inheritdoc IMultistrategy
-    uint256 public lockedProfit;
+    uint216 public lockedProfit;
 
     /*//////////////////////////////////////////////////////////////////////////
                                      CONSTRUCTOR
@@ -58,7 +59,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     {   
         DECIMALS_OFFSET = (Math.max(0, 18 - IERC20Metadata(_asset).decimals())).toUint8();
         performanceFee = 1000;
-        lastReport = block.timestamp;
+        lastReport = block.timestamp.toUint40();
         LOCKED_PROFIT_DEGRADATION = 1 ether / Constants.PROFIT_UNLOCK_TIME;
     }
 
@@ -113,12 +114,14 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
 
     /// @inheritdoc IMultistrategy
     function creditAvailable(address _strategy) external view returns (uint256) {
-        return _creditAvailable(_strategy);
+        DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        return _creditAvailable(strategy);
     }
 
     /// @inheritdoc IMultistrategy
     function debtExcess(address _strategy) external view returns (uint256) {
-        return _debtExcess(_strategy);
+        DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        return _debtExcess(strategy);
     }
 
     /// @inheritdoc IMultistrategy
@@ -243,39 +246,40 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @notice Calculates the available credit for a strategy.
     /// @param _strategy The address of the strategy for which to determine the available credit.
     /// @return The amount of credit available for the given strategy.
-    function _creditAvailable(address _strategy) internal view returns (uint256) {
+    function _creditAvailable(DataTypes.StrategyParams storage _strategy) internal view returns (uint256) {
         uint256 mTotalAssets = totalAssets();
-        uint256 mDebtLimit = debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS, Math.Rounding.Floor);
+        uint256 mTotalDebt = totalDebt;
+        uint256 mDebtLimit = mTotalAssets.mulDiv(debtRatio, Constants.MAX_BPS, Math.Rounding.Floor);
 
-        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(mTotalAssets, Constants.MAX_BPS, Math.Rounding.Floor);
-        uint256 sTotalDebt = strategies[_strategy].totalDebt;
+        uint256 sDebtLimit = mTotalAssets.mulDiv(_strategy.debtRatio, Constants.MAX_BPS, Math.Rounding.Floor);
+        uint256 sTotalDebt = _strategy.totalDebt;
 
-        if(sTotalDebt >= sDebtLimit || totalDebt >= mDebtLimit){
+        if(sTotalDebt >= sDebtLimit || mTotalDebt >= mDebtLimit){
             return 0;
         }
 
         uint256 credit = sDebtLimit - sTotalDebt;
-        uint256 maxAvailableCredit = mDebtLimit - totalDebt;
+        uint256 maxAvailableCredit = mDebtLimit - mTotalDebt;
         credit = Math.min(credit, maxAvailableCredit);
 
         // Bound to the minimum and maximum borrow limits
-        if(credit < strategies[_strategy].minDebtDelta) {
+        if(credit < _strategy.minDebtDelta) {
             return 0;
         } else {
-            return Math.min(credit, strategies[_strategy].maxDebtDelta);
+            return Math.min(credit, _strategy.maxDebtDelta);
         }
     }
 
     /// @notice Calculates the excess debt of a strategy.
     /// @param _strategy The address of the strategy for which to determine the debt excess.
     /// @return The amount of excess debt for the given strategy.
-    function _debtExcess(address _strategy) internal view returns (uint256) {
+    function _debtExcess(DataTypes.StrategyParams storage _strategy) internal view returns (uint256) {
         if(debtRatio == 0) {
-            return strategies[_strategy].totalDebt;
+            return _strategy.totalDebt;
         }
 
-        uint256 sDebtLimit = strategies[_strategy].debtRatio.mulDiv(totalAssets(), Constants.MAX_BPS, Math.Rounding.Floor);
-        uint256 sTotalDebt = strategies[_strategy].totalDebt;
+        uint256 sDebtLimit = totalAssets().mulDiv(_strategy.debtRatio, Constants.MAX_BPS, Math.Rounding.Floor);
+        uint256 sTotalDebt = _strategy.totalDebt;
 
         if(sTotalDebt <= sDebtLimit) {
             return 0;
@@ -295,11 +299,12 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// Calculated as: initialLockedProfit * (1 - timeElapsed / 3 days), where timeElapsed
     /// is the time since last report. Returns 0 after 3 days.
     /// @return newLockedProfit The calculated current locked profit.
-    function _calculateLockedProfit() internal view returns (uint256 newLockedProfit) {
+    function _calculateLockedProfit() internal view returns (uint216 newLockedProfit) {
         // 3 days in seconds * LOCKED_PROFIT_DEGRADATION = 1 ether
         uint256 lockedFundsRatio = (block.timestamp - lastReport) * LOCKED_PROFIT_DEGRADATION;
         if(lockedFundsRatio < 1 ether) {
-            newLockedProfit = lockedProfit - lockedFundsRatio.mulDiv(lockedProfit, 1 ether, Math.Rounding.Floor);
+            uint256 hasUnlocked = lockedFundsRatio.mulDiv(lockedProfit, 1 ether, Math.Rounding.Floor);
+            newLockedProfit = (lockedProfit - hasUnlocked).toUint216();
         }
         return newLockedProfit;
     }
@@ -335,8 +340,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if (nStrategies == 0) return (0, 0);
 
         for(uint256 i = 0; i < nStrategies; ++i){
-            address strategy = withdrawOrder[i];
-            (uint256 gain, uint256 loss) = IAdapter(strategy).currentPnL();
+            address strategyAddress = withdrawOrder[i];
+            (uint256 gain, uint256 loss) = IAdapter(strategyAddress).currentPnL();
             totalProfit += gain.mulDiv(Constants.MAX_BPS - performanceFee, Constants.MAX_BPS, Math.Rounding.Floor);
             totalLoss += loss;
         }
@@ -410,22 +415,28 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         require(_receiver != address(0) && _receiver != address(this), Errors.InvalidAddress(_receiver));
         require(_shares > 0, Errors.ZeroAmount(_shares));
 
+        uint256 currentBalance = _balance();
+        uint256 totalRepaid = 0;
+
         if (_caller != _owner) _spendAllowance(_owner, _caller, _shares);
-        if (_assets > _balance()) {
+        if (_assets > currentBalance) {
             uint256 nStrategies = withdrawOrder.length;
             for(uint256 i = 0; i < nStrategies; ++i){
-                address strategy = withdrawOrder[i];
+                address strategyAddress = withdrawOrder[i];
+                DataTypes.StrategyParams storage strategy = strategies[strategyAddress];
                 uint256 assetsToWithdraw = (_assets - _balance())
-                                                .min(strategies[strategy].totalDebt)
-                                                .min(IAdapter(strategy).availableLiquidity());
+                                                .min(strategy.totalDebt)
+                                                .min(IAdapter(strategyAddress).availableLiquidity());
                 if(assetsToWithdraw == 0) continue;
 
-                uint256 withdrawn = IAdapter(strategy).withdraw(assetsToWithdraw);
-                strategies[strategy].totalDebt -= withdrawn;
-                totalDebt -= withdrawn;
+                uint256 withdrawn = IAdapter(strategyAddress).withdraw(assetsToWithdraw);
+                currentBalance += withdrawn;
+                strategy.totalDebt -= withdrawn;
+                totalRepaid += withdrawn;
 
-                if(_assets <= _balance()) break;
+                if(_assets <= currentBalance) break;
             }
+            totalDebt -= totalRepaid;
         }
         _burn(_owner, _shares);
         IERC20(asset()).safeTransfer(_receiver, _assets);
@@ -437,10 +448,11 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @dev This function should be called only by active strategies when they need to request credit.
     /// @return credit The amount of credit requested by msg.sender
     function _requestCredit() internal returns (uint256 credit){
-        credit = _creditAvailable(msg.sender);
+        DataTypes.StrategyParams storage strategy = strategies[msg.sender];
+        credit = _creditAvailable(strategy);
 
         if(credit > 0) {
-            strategies[msg.sender].totalDebt += credit;
+            strategy.totalDebt += credit;
             totalDebt += credit;
             IERC20(asset()).safeTransfer(msg.sender, credit);
             emit CreditRequested(msg.sender, credit);
@@ -458,24 +470,34 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
 
         uint256 profit = 0;
         uint256 feesCollected = 0;
-        if(_loss > 0) _settleLoss(msg.sender, _loss);
+        uint256 debtReduction = 0;
+        DataTypes.StrategyParams storage strategy = strategies[msg.sender];
+
+        if(_loss > 0) {
+            require(_loss <= strategy.totalDebt, Errors.InvalidStrategyLoss());
+            strategy.totalLoss += _loss;
+            debtReduction += _loss; 
+        }
         if(_gain > 0) {
-            strategies[msg.sender].totalGain += _gain;
+            strategy.totalGain += _gain;
             feesCollected = _gain.mulDiv(performanceFee, Constants.MAX_BPS, Math.Rounding.Floor);
             profit = _gain - feesCollected;
         } 
 
-        uint256 debtToRepay = Math.min(_debtRepayment, _debtExcess(msg.sender));
+        uint256 debtToRepay = Math.min(_debtRepayment, _debtExcess(strategy));
         if(debtToRepay > 0) {
-            strategies[msg.sender].totalDebt -= debtToRepay;
-            totalDebt -= debtToRepay;
+            debtReduction += debtToRepay;
+        }
+        if(debtReduction > 0) {
+            strategy.totalDebt -= debtReduction;
+            totalDebt -= debtReduction;
         }
         
         uint256 newLockedProfit = _calculateLockedProfit() + profit;
-        lockedProfit = newLockedProfit > _loss ? newLockedProfit - _loss : 0;
+        lockedProfit = newLockedProfit > _loss ? (newLockedProfit - _loss).toUint216() : 0;
 
-        strategies[msg.sender].lastReport = block.timestamp.toUint32();
-        lastReport = block.timestamp;
+        strategy.lastReport = block.timestamp.toUint40();
+        lastReport = block.timestamp.toUint40();
 
         if(debtToRepay + _gain > 0) IERC20(asset()).safeTransferFrom(msg.sender, address(this), debtToRepay + _gain);
         if(feesCollected > 0) IERC20(asset()).safeTransfer(protocolFeeRecipient, feesCollected);
@@ -489,22 +511,11 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     function _settleUnrealizedLosses() internal {
         uint256 nStrategies = withdrawOrder.length;
         for(uint256 i = 0; i < nStrategies; ++i){
-            address strategy = withdrawOrder[i];
-            if(strategies[strategy].totalDebt == 0) continue;
+            address strategyAddress = withdrawOrder[i];
+            if(strategies[strategyAddress].totalDebt == 0) continue;
             
-            (, uint256 loss) = IAdapter(strategy).currentPnL();
-            if(loss > 0) IAdapter(strategy).askReport();
+            (, uint256 loss) = IAdapter(strategyAddress).currentPnL();
+            if(loss > 0) IAdapter(strategyAddress).askReport();
         }
-    }
-
-    /// @notice Settles a loss for a strategy.
-    /// @param _strategy The address of the strategy reporting the loss.
-    /// @param _loss The amount of loss reported by the strategy.
-    function _settleLoss(address _strategy, uint256 _loss) internal {
-        require(_loss > 0 && _loss <= strategies[_strategy].totalDebt, Errors.InvalidStrategyLoss());
-
-        strategies[_strategy].totalLoss += _loss;
-        strategies[_strategy].totalDebt -= _loss;
-        totalDebt -= _loss;
     }
 }

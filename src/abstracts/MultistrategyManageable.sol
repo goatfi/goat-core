@@ -17,19 +17,19 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     address public protocolFeeRecipient;
 
     /// @inheritdoc IMultistrategyManageable
-    uint256 public performanceFee;
+    uint16 public performanceFee;
+
+    /// @inheritdoc IMultistrategyManageable
+    uint16 public debtRatio;
+
+    /// @inheritdoc IMultistrategyManageable
+    uint16 public slippageLimit;
 
     /// @inheritdoc IMultistrategyManageable
     uint256 public depositLimit;
 
     /// @inheritdoc IMultistrategyManageable
-    uint256 public debtRatio;
-
-    /// @inheritdoc IMultistrategyManageable
     uint256 public totalDebt;
-
-    /// @inheritdoc IMultistrategyManageable
-    uint256 public slippageLimit;
 
     /*//////////////////////////////////////////////////////////////////////////
                                   PRIVATE STORAGE
@@ -111,7 +111,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setPerformanceFee(uint256 _performanceFee) external onlyOwner {
+    function setPerformanceFee(uint16 _performanceFee) external onlyOwner {
         require(_performanceFee <= Constants.MAX_PERFORMANCE_FEE, Errors.ExcessiveFee(_performanceFee));
 
         performanceFee = _performanceFee;
@@ -125,7 +125,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setSlippageLimit(uint256 _slippageLimit) external onlyManager {
+    function setSlippageLimit(uint16 _slippageLimit) external onlyManager {
         require(_slippageLimit <= Constants.MAX_BPS, Errors.SlippageLimitExceeded(_slippageLimit));
         
         slippageLimit = _slippageLimit;
@@ -147,7 +147,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     /// @inheritdoc IMultistrategyManageable
     function addStrategy(
         address _strategy,
-        uint256 _debtRatio,
+        uint16 _debtRatio,
         uint256 _minDebtDelta,
         uint256 _maxDebtDelta
     ) external onlyOwner {
@@ -159,7 +159,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
 
         strategies[_strategy] = DataTypes.StrategyParams({
             queueIndex: withdrawOrder.length.toUint8(),
-            lastReport: block.timestamp.toUint32(),
+            lastReport: block.timestamp.toUint40(),
             debtRatio: _debtRatio,
             minDebtDelta: _minDebtDelta,
             maxDebtDelta: _maxDebtDelta,
@@ -176,41 +176,45 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
 
     /// @inheritdoc IMultistrategyManageable
     function removeStrategy(address _strategy) external onlyManager onlyActiveStrategy(_strategy) {
-        require(strategies[_strategy].debtRatio == 0, Errors.StrategyWithActiveDebtRatio());
-        require(strategies[_strategy].totalDebt == 0, Errors.StrategyWithActiveDebt());
+        DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        require(strategy.debtRatio == 0, Errors.StrategyWithActiveDebtRatio());
+        require(strategy.totalDebt == 0, Errors.StrategyWithActiveDebt());
 
-        uint256 startingIndex = strategies[_strategy].queueIndex;
+        uint256 startingIndex = strategy.queueIndex;
         uint256 nStrategies = withdrawOrder.length -1;
         for(uint256 i = startingIndex; i < nStrategies; ++i) {
-            withdrawOrder[i] = withdrawOrder[i+1];
-            strategies[withdrawOrder[i]].queueIndex = i.toUint8();
+            address strategyToMove = withdrawOrder[i+1];
+            withdrawOrder[i] = strategyToMove;
+            strategies[strategyToMove].queueIndex = i.toUint8();
         }
 
-        delete strategies[_strategy];
         withdrawOrder.pop();
+        delete strategies[_strategy];
         
         emit StrategyRemoved(_strategy);
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setStrategyDebtRatio(address _strategy, uint256 _debtRatio) external onlyManager onlyActiveStrategy(_strategy) {
+    function setStrategyDebtRatio(address _strategy, uint16 _debtRatio) external onlyManager onlyActiveStrategy(_strategy) {
         _setDebtRatio(_strategy, _debtRatio);
     }
 
     /// @inheritdoc IMultistrategyManageable
     function setStrategyMinDebtDelta(address _strategy, uint256 _minDebtDelta) external onlyManager onlyActiveStrategy(_strategy) {
-        require(strategies[_strategy].maxDebtDelta >= _minDebtDelta, Errors.InvalidDebtDelta());
+        DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        require(strategy.maxDebtDelta >= _minDebtDelta, Errors.InvalidDebtDelta());
 
-        strategies[_strategy].minDebtDelta = _minDebtDelta;
+        strategy.minDebtDelta = _minDebtDelta;
 
         emit StrategyMinDebtDeltaSet(_strategy, _minDebtDelta);
     }
 
     /// @inheritdoc IMultistrategyManageable
     function setStrategyMaxDebtDelta(address _strategy, uint256 _maxDebtDelta) external onlyManager onlyActiveStrategy(_strategy) {
-        require(strategies[_strategy].minDebtDelta <= _maxDebtDelta, Errors.InvalidDebtDelta());
+        DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        require(strategy.minDebtDelta <= _maxDebtDelta, Errors.InvalidDebtDelta());
 
-        strategies[_strategy].maxDebtDelta = _maxDebtDelta;
+        strategy.maxDebtDelta = _maxDebtDelta;
 
         emit StrategyMaxDebtDeltaSet(_strategy, _maxDebtDelta);
     }
@@ -228,12 +232,13 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     /// @notice Sets the debt ratio for a strategy.
     /// @param _strategy The strategy address.
     /// @param _debtRatio The new debt ratio.
-    function _setDebtRatio(address _strategy, uint256 _debtRatio) internal {
-        uint256 newDebtRatio = debtRatio - strategies[_strategy].debtRatio + _debtRatio;
+    function _setDebtRatio(address _strategy, uint16 _debtRatio) internal {
+        DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        uint16 newDebtRatio = debtRatio - strategy.debtRatio + _debtRatio;
         require(newDebtRatio <= Constants.MAX_BPS, Errors.DebtRatioAboveMaximum(newDebtRatio));
 
         debtRatio = newDebtRatio;
-        strategies[_strategy].debtRatio = _debtRatio;
+        strategy.debtRatio = _debtRatio;
 
         emit StrategyDebtRatioSet(_strategy, _debtRatio);
     }
