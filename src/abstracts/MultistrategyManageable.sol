@@ -133,7 +133,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setWithdrawOrder(address[] memory _strategies) external onlyManager {
+    function setWithdrawOrder(address[] calldata _strategies) external onlyManager {
         require(_validateStrategyOrder(_strategies), Errors.InvalidWithdrawOrder());
         
         uint256 nStrategies = _strategies.length;
@@ -241,7 +241,7 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     /// @notice Validates the order of strategies for withdrawals.
     /// @param _strategies The array of strategy addresses to validate.
     /// @return True if the order is valid. False if not valid.
-    function _validateStrategyOrder(address[] memory _strategies) internal view returns (bool) {
+    function _validateStrategyOrder(address[] calldata _strategies) internal view returns (bool) {
         uint256 nStrategies = withdrawOrder.length;
         if(_strategies.length != nStrategies) return false;
         for(uint256 i = 0; i < nStrategies; ++i) {
