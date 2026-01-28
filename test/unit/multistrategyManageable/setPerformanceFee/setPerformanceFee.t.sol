@@ -7,7 +7,7 @@ import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { IMultistrategyManageable } from "src/interfaces/IMultistrategyManageable.sol";
 
 contract SetPerformanceFee_Integration_Concrete_Test is Multistrategy_Base_Test {
-    uint256 newFee;
+    uint16 newFee;
 
     function test_RevertWhen_CallerNotOwner() external {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, users.bob));

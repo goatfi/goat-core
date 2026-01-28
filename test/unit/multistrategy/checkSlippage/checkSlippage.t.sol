@@ -6,7 +6,7 @@ import { Errors } from "src/libraries/Errors.sol";
 
 contract CheckSlippage_Integration_Concrete_Test is MultistrategyHarness_Base_Test {
 
-    modifier whenSlippageLimitIs(uint256 _limit) {
+    modifier whenSlippageLimitIs(uint16 _limit) {
         vm.prank(users.owner); multistrategy.setSlippageLimit(_limit);
         _;
     }

@@ -6,7 +6,7 @@ import { Errors } from "src/libraries/Errors.sol";
 import { IMultistrategyManageable } from "src/interfaces/IMultistrategyManageable.sol";
 
 contract SetSlippageLimit_Integration_Concrete_Test is Multistrategy_Base_Test {
-    uint256 newLimit;
+    uint16 newLimit;
 
     function test_RevertWhen_CallerNotManager() external {
         vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));

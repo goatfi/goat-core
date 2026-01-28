@@ -11,7 +11,7 @@ import { Errors } from "src/libraries/Errors.sol";
 import { IMultistrategyManageable } from "src/interfaces/IMultistrategyManageable.sol";
 
 contract AddStrategy_Integration_Concrete_Test is Multistrategy_Base_Test {
-    uint256 debtRatio = 5_000;
+    uint16 debtRatio = 5_000;
     uint256 minDebtDelta = 100 ether;
     uint256 maxDebtDelta = 100_000 ether;
 

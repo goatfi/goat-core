@@ -38,7 +38,7 @@ contract Multistrategy_Base_Test is Base_Test {
         adapter = new MockAdapter(users.manager, address(multistrategy));
     }
 
-    function _createAndAddAdapter(uint256 _debtRatio, uint256 _minDebtDelta, uint256 _maxDebtDelta) internal returns (MockAdapter adapter) {
+    function _createAndAddAdapter(uint16 _debtRatio, uint256 _minDebtDelta, uint256 _maxDebtDelta) internal returns (MockAdapter adapter) {
         adapter = new MockAdapter(users.manager, address(multistrategy));
         vm.prank(users.owner); multistrategy.addStrategy(address(adapter), _debtRatio, _minDebtDelta, _maxDebtDelta);
     }

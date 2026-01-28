@@ -33,10 +33,6 @@ contract MultistrategyHarness is Multistrategy {
         return _freeFunds();
     }
 
-    function settleLoss(address _strategy, uint256 _loss) external {
-        _settleLoss(_strategy, _loss);
-    }
-
     function enter(address _caller, address _receiver, uint256 _assets, uint256 _shares) external {
         _enter(_caller, _receiver, _assets, _shares);
     }

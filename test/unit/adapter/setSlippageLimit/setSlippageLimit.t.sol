@@ -8,7 +8,7 @@ import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { Errors } from "src/libraries/Errors.sol";
 
 contract SetSlippageLimit_Integration_Concrete_Test is Adapter_Base_Test {
-    uint256 slippageLimit;
+    uint16 slippageLimit;
 
     function test_RevertWhen_CallerNotOwner() external {
         // Set the slippage limit to 1%

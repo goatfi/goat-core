@@ -8,7 +8,7 @@ import { IMultistrategyManageable } from "src/interfaces/IMultistrategyManageabl
 
 contract SetStrategyDebtRatio_Integration_Concrete_Test is Multistrategy_Base_Test {
     MockAdapter strategy;
-    uint256 debtRatio;
+    uint16 debtRatio;
 
     function test_RevertWhen_CallerNotManager() external {
         vm.expectRevert(abi.encodeWithSelector(Errors.Unauthorized.selector, users.bob));
