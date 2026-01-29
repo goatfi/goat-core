@@ -22,6 +22,7 @@ lcov.info
 
 #Gas snapshot file
 .gas-snapshot
+/snapshots
 
 #Slither
 slither.db.json
