@@ -82,6 +82,22 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         _;
     }
 
+    function test_RevertWhen_StrategyReport_LossExceedsTotalDebt()
+        external
+        whenContractNotPaused
+        whenCallerActiveStrategy
+        whenStrategyHasBalanceToRepay
+    {
+        repayAmount = 0;
+        gainAmount = 0;
+        uint256 totalDebt = multistrategy.strategyTotalDebt(address(strategy));
+        loseAmount = totalDebt + 1;
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidStrategyLoss.selector));
+        vm.prank(address(strategy)); 
+        multistrategy.strategyReport(repayAmount, gainAmount, loseAmount);
+    }
+
     modifier whenStrategyHasExceedingDebt() {
         vm.prank(users.manager); multistrategy.setStrategyDebtRatio(address(strategy),  0);
         _;
