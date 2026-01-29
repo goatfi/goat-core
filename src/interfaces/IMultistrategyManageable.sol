@@ -12,7 +12,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
 
     /// @notice Emitted when the performance fee is set.
     /// @param _performanceFee The new performance fee value.
-    event PerformanceFeeSet(uint256 _performanceFee);
+    event PerformanceFeeSet(uint16 _performanceFee);
 
     /// @notice Emitted when the deposit limit is set.
     /// @param _depositLimit The new deposit limit value.
@@ -20,7 +20,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
 
     /// @notice Emitted when the slippage limit is set.
     /// @param _slippageLimit The new slippage limit value.
-    event SlippageLimitSet(uint256 _slippageLimit);
+    event SlippageLimitSet(uint16 _slippageLimit);
 
     /// @notice Emitted when a new withdrawal order has been set.
     event WithdrawOrderSet();
@@ -28,7 +28,7 @@ interface IMultistrategyManageable is IMultistrategyAdminable {
     /// @notice Emitted when the debt ratio for a specific strategy is set.
     /// @param _strategy The address of the strategy whose debt ratio was updated.
     /// @param _debtRatio The new debt ratio value for the specified strategy.
-    event StrategyDebtRatioSet(address indexed _strategy, uint256 _debtRatio);
+    event StrategyDebtRatioSet(address indexed _strategy, uint16 _debtRatio);
 
     /// @notice Emitted when the minimum debt delta for a specific strategy is set.
     /// @param _strategy The address of the strategy whose minimum debt delta was updated.

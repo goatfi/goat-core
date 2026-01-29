@@ -468,7 +468,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         require(!(_gain > 0 && _loss > 0), Errors.GainLossMismatch());
         require(strategyBalance >= _debtRepayment + _gain, Errors.InsufficientBalance(strategyBalance, _debtRepayment + _gain));
 
-        uint256 profit = 0;
         uint256 feesCollected = 0;
         uint256 debtReduction = 0;
         DataTypes.StrategyParams storage strategy = strategies[msg.sender];
@@ -481,7 +480,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         if(_gain > 0) {
             strategy.totalGain += _gain;
             feesCollected = _gain.mulDiv(performanceFee, Constants.MAX_BPS, Math.Rounding.Floor);
-            profit = _gain - feesCollected;
         } 
 
         uint256 debtToRepay = Math.min(_debtRepayment, _debtExcess(strategy));
@@ -493,7 +491,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             totalDebt -= debtReduction;
         }
         
-        uint256 newLockedProfit = _calculateLockedProfit() + profit;
+        uint256 newLockedProfit = _calculateLockedProfit() + _gain - feesCollected;
         lockedProfit = newLockedProfit > _loss ? (newLockedProfit - _loss).toUint216() : 0;
 
         strategy.lastReport = block.timestamp.toUint40();

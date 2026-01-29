@@ -5,7 +5,7 @@ pragma solidity ^0.8.27;
 interface IAdapter {
     /// @notice Emitted when the slippage limit is set.
     /// @param slippageLimit The new slippage limit in basis points (BPS).
-    event SlippageLimitSet(uint256 slippageLimit);
+    event SlippageLimitSet(uint16 slippageLimit);
 
     /// @notice Returns the address of the multistrategy this Strategy belongs to.
     function multistrategy() external view returns (address);

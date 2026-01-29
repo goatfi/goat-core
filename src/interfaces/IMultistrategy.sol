@@ -20,7 +20,7 @@ interface IMultistrategy is IMultistrategyManageable {
     /// @notice Emitted when the price per share has been updated.
     /// @param pricePerShare The new price per share.
     /// @param lockedProfit The amount of tokens that will vest for the PROFIT_UNLOCK_TIME
-    event Earn(uint256 pricePerShare, uint256 lockedProfit);
+    event Earn(uint256 pricePerShare, uint216 lockedProfit);
 
     /// @notice Timestamp of the last report made by a strategy.
     function lastReport() external view returns (uint40);
