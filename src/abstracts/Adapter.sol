@@ -24,10 +24,10 @@ abstract contract Adapter is IAdapter, Ownable {
     /// @inheritdoc IAdapter
     uint16 public slippageLimit;
 
-    /// @notice Name of this Strategy Adapter
+    /// @notice Name of this Adapter
     string public name;
 
-    /// @notice Identifier of this Strategy Adapter
+    /// @notice Identifier of this Adapter
     string public id;
 
     /*//////////////////////////////////////////////////////////////////////////
