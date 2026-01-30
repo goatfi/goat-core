@@ -75,7 +75,8 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     /// @inheritdoc IERC4626
     /// @dev Limited by the deposit limit
     function maxDeposit(address) public view override returns (uint256) {
-        return totalAssets() >= depositLimit ? 0 : depositLimit - totalAssets();
+        uint256 _totalAssets = totalAssets();
+        return _totalAssets >= depositLimit ? 0 : depositLimit - _totalAssets;
     }
 
     /// @inheritdoc IERC4626
@@ -196,17 +197,60 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
     }
 
     /// @inheritdoc IMultistrategy
-    function requestCredit() external whenNotPaused onlyActiveStrategy(msg.sender) returns (uint256) {
-        return _requestCredit();
+    function requestCredit() external whenNotPaused returns (uint256 credit) {
+        DataTypes.StrategyParams storage strategy = strategies[msg.sender];
+        require(strategy.lastReport > 0, Errors.StrategyNotActive(msg.sender));
+        credit = _creditAvailable(strategy);
+
+        if(credit > 0) {
+            strategy.totalDebt += credit;
+            totalDebt += credit;
+            IERC20(asset()).safeTransfer(msg.sender, credit);
+            emit CreditRequested(msg.sender, credit);
+        }
     }
 
     /// @inheritdoc IMultistrategy
-    function strategyReport(uint256 _debtRepayment, uint256 _gain, uint256 _loss) 
-        external 
-        whenNotPaused
-        onlyActiveStrategy(msg.sender)
-    {
-        _report(_debtRepayment, _gain, _loss);
+    function strategyReport(uint256 _debtRepayment, uint256 _gain, uint256 _loss) external whenNotPaused {
+        DataTypes.StrategyParams storage strategy = strategies[msg.sender];
+        require(strategy.lastReport > 0, Errors.StrategyNotActive(msg.sender));
+        require(!(_gain > 0 && _loss > 0), Errors.GainLossMismatch());
+        uint256 strategyBalance = IERC20(asset()).balanceOf(msg.sender);
+        require(strategyBalance >= _debtRepayment + _gain, Errors.InsufficientBalance(strategyBalance, _debtRepayment + _gain));
+
+        uint256 feesCollected = 0;
+        uint256 debtReduction = 0;
+
+        if(_loss > 0) {
+            require(_loss <= strategy.totalDebt, Errors.InvalidStrategyLoss());
+            strategy.totalLoss += _loss;
+            debtReduction += _loss; 
+        }
+        if(_gain > 0) {
+            strategy.totalGain += _gain;
+            feesCollected = _gain.mulDiv(performanceFee, Constants.MAX_BPS, Math.Rounding.Floor);
+        } 
+
+        uint256 debtToRepay = Math.min(_debtRepayment, _debtExcess(strategy));
+        if(debtToRepay > 0) {
+            debtReduction += debtToRepay;
+        }
+        if(debtReduction > 0) {
+            strategy.totalDebt -= debtReduction;
+            totalDebt -= debtReduction;
+        }
+        
+        uint256 newLockedProfit = _calculateLockedProfit() + _gain - feesCollected;
+        lockedProfit = newLockedProfit > _loss ? (newLockedProfit - _loss).toUint216() : 0;
+
+        strategy.lastReport = block.timestamp.toUint40();
+        lastReport = block.timestamp.toUint40();
+
+        if(debtToRepay + _gain > 0) IERC20(asset()).safeTransferFrom(msg.sender, address(this), debtToRepay + _gain);
+        if(feesCollected > 0) IERC20(asset()).safeTransfer(protocolFeeRecipient, feesCollected);
+
+        emit StrategyReported(msg.sender, debtToRepay, _gain, _loss);
+        emit Earn(convertToAssets(1 ether), lockedProfit);
     }
     
     /// @inheritdoc IMultistrategy
@@ -320,7 +364,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         uint256 _expectedShares,
         uint256 _actualShares
     ) internal view {
-        if (_actualAssets == 0 || _actualShares == 0) revert Errors.SlippageCheckFailed(Constants.MAX_BPS, slippageLimit);
+        require(_actualAssets > 0 && _actualShares > 0, Errors.SlippageCheckFailed(Constants.MAX_BPS, slippageLimit));
         if (_expectedAssets == 0 || _expectedShares == 0) return;
         
         uint256 expectedExchangeRate = _expectedAssets.mulDiv(10**36, _expectedShares, Math.Rounding.Floor);
@@ -424,7 +468,7 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
             for(uint256 i = 0; i < nStrategies; ++i){
                 address strategyAddress = withdrawOrder[i];
                 DataTypes.StrategyParams storage strategy = strategies[strategyAddress];
-                uint256 assetsToWithdraw = (_assets - _balance())
+                uint256 assetsToWithdraw = (_assets - currentBalance)
                                                 .min(strategy.totalDebt)
                                                 .min(IAdapter(strategyAddress).availableLiquidity());
                 if(assetsToWithdraw == 0) continue;
@@ -442,66 +486,6 @@ contract Multistrategy is IMultistrategy, MultistrategyManageable, ERC4626, Reen
         IERC20(asset()).safeTransfer(_receiver, _assets);
 
         emit Withdraw(_caller, _receiver, _owner, _assets, _shares);
-    }
-
-    /// @notice Requests credit for an active strategy.
-    /// @dev This function should be called only by active strategies when they need to request credit.
-    /// @return credit The amount of credit requested by msg.sender
-    function _requestCredit() internal returns (uint256 credit){
-        DataTypes.StrategyParams storage strategy = strategies[msg.sender];
-        credit = _creditAvailable(strategy);
-
-        if(credit > 0) {
-            strategy.totalDebt += credit;
-            totalDebt += credit;
-            IERC20(asset()).safeTransfer(msg.sender, credit);
-            emit CreditRequested(msg.sender, credit);
-        }
-    }
-
-    /// @notice Reports the performance of a strategy.
-    /// @param _debtRepayment The amount of debt being repaid by the strategy.
-    /// @param _gain The amount of profit reported by the strategy.
-    /// @param _loss The amount of loss reported by the strategy.
-    function _report(uint256 _debtRepayment, uint256 _gain, uint256 _loss) internal {
-        uint256 strategyBalance = IERC20(asset()).balanceOf(msg.sender);
-        require(!(_gain > 0 && _loss > 0), Errors.GainLossMismatch());
-        require(strategyBalance >= _debtRepayment + _gain, Errors.InsufficientBalance(strategyBalance, _debtRepayment + _gain));
-
-        uint256 feesCollected = 0;
-        uint256 debtReduction = 0;
-        DataTypes.StrategyParams storage strategy = strategies[msg.sender];
-
-        if(_loss > 0) {
-            require(_loss <= strategy.totalDebt, Errors.InvalidStrategyLoss());
-            strategy.totalLoss += _loss;
-            debtReduction += _loss; 
-        }
-        if(_gain > 0) {
-            strategy.totalGain += _gain;
-            feesCollected = _gain.mulDiv(performanceFee, Constants.MAX_BPS, Math.Rounding.Floor);
-        } 
-
-        uint256 debtToRepay = Math.min(_debtRepayment, _debtExcess(strategy));
-        if(debtToRepay > 0) {
-            debtReduction += debtToRepay;
-        }
-        if(debtReduction > 0) {
-            strategy.totalDebt -= debtReduction;
-            totalDebt -= debtReduction;
-        }
-        
-        uint256 newLockedProfit = _calculateLockedProfit() + _gain - feesCollected;
-        lockedProfit = newLockedProfit > _loss ? (newLockedProfit - _loss).toUint216() : 0;
-
-        strategy.lastReport = block.timestamp.toUint40();
-        lastReport = block.timestamp.toUint40();
-
-        if(debtToRepay + _gain > 0) IERC20(asset()).safeTransferFrom(msg.sender, address(this), debtToRepay + _gain);
-        if(feesCollected > 0) IERC20(asset()).safeTransfer(protocolFeeRecipient, feesCollected);
-
-        emit StrategyReported(msg.sender, debtToRepay, _gain, _loss);
-        emit Earn(convertToAssets(1 ether), lockedProfit);
     }
 
     /// @notice Loops through the active strategies and settles any unrealized loss.
