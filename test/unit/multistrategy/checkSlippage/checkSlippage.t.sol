@@ -12,7 +12,37 @@ contract CheckSlippage_Integration_Concrete_Test is MultistrategyHarness_Base_Te
     }
 
     /*//////////////////////////////////////////////////////////////////////////
-                                EARLY RETURN TESTS
+                        EARLY REVERTS WHEN ACTUAL IS ZERO
+    //////////////////////////////////////////////////////////////////////////*/
+
+    function test_RevertWhen_ActualAssetsIsZero()
+        external
+        whenSlippageLimitIs(100)
+    {
+        vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 10000, 100));
+        multistrategy.checkSlippage({
+            _expectedAssets: 1000 ether,
+            _actualAssets: 0,
+            _expectedShares: 1000 ether,
+            _actualShares: 1000 ether
+        });
+    }
+
+    function test_RevertWhen_ActualSharesIsZero()
+        external
+        whenSlippageLimitIs(100)
+    {
+        vm.expectRevert(abi.encodeWithSelector(Errors.SlippageCheckFailed.selector, 10000, 100));
+        multistrategy.checkSlippage({
+            _expectedAssets: 1000 ether,
+            _actualAssets: 1000 ether,
+            _expectedShares: 1000 ether,
+            _actualShares: 0
+        });
+    }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                               EARLY RETURN TESTS
     //////////////////////////////////////////////////////////////////////////*/
 
     function test_CheckSlippage_WhenExpectedAssetsIsZero()

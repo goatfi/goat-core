@@ -17,10 +17,11 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
     uint256 repayAmount;
 
     function test_RevertWhen_ContractIsPaused() external {
+        strategy = _createAdapter();
         vm.prank(users.guardian); multistrategy.pause();
 
         vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        multistrategy.requestCredit();
+        vm.prank(address(strategy)); multistrategy.strategyReport(0, 0, 0);
     }
 
     modifier whenContractNotPaused() {
@@ -31,8 +32,9 @@ contract StrategyReport_Integration_Concrete_Test is Multistrategy_Base_Test {
         external
         whenContractNotPaused    
     {   
-        vm.expectRevert(abi.encodeWithSelector(Errors.StrategyNotActive.selector, users.manager));
-        vm.prank(users.manager); multistrategy.requestCredit();
+        strategy = _createAdapter();
+        vm.expectRevert(abi.encodeWithSelector(Errors.StrategyNotActive.selector, address(strategy)));
+        vm.prank(address(strategy)); multistrategy.strategyReport(0, 0, 0);
     }
 
     modifier whenCallerActiveStrategy() {

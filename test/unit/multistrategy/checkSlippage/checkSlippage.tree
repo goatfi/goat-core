@@ -1,7 +1,9 @@
 checkSlippage.t.sol
-├── when expected shares is 0
-│   └── it should return early without reverting
+├── when actual assets is 0
+│   └── it should revert with SlippageCheckFailed error
 ├── when actual shares is 0
+│   └── it should revert with SlippageCheckFailed error
+├── when expected shares is 0
 │   └── it should return early without reverting
 └── when both expected shares and actual shares are greater than 0
     ├── when expected exchange rate is less than actual exchange rate
