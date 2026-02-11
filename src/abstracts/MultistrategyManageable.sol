@@ -62,24 +62,6 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /*//////////////////////////////////////////////////////////////////////////
-                                    MODIFIER
-    //////////////////////////////////////////////////////////////////////////*/
-
-    /// @notice Check if `_strategy` is active.
-    /// @dev Reverts if `_strategy` is not active.
-    /// @param _strategy Address of the strategy to check if it is active.
-    modifier onlyActiveStrategy(address _strategy) {
-        _onlyActiveStrategy(_strategy);
-        _;
-    }
-
-    /// @notice Internal function to check if `_strategy` is active.
-    /// @param _strategy Address of the strategy to check if it is active.
-    function _onlyActiveStrategy(address _strategy) internal view {
-        require(strategies[_strategy].lastReport > 0, Errors.StrategyNotActive(_strategy));
-    }
-
-    /*//////////////////////////////////////////////////////////////////////////
                         USER FACING CONSTANT FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
 
@@ -175,8 +157,9 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function removeStrategy(address _strategy) external onlyManager onlyActiveStrategy(_strategy) {
+    function removeStrategy(address _strategy) external onlyManager {
         DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        require(strategy.lastReport > 0, Errors.StrategyNotActive(_strategy));
         require(strategy.debtRatio == 0, Errors.StrategyWithActiveDebtRatio());
         require(strategy.totalDebt == 0, Errors.StrategyWithActiveDebt());
 
@@ -195,13 +178,16 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setStrategyDebtRatio(address _strategy, uint16 _debtRatio) external onlyManager onlyActiveStrategy(_strategy) {
-        _setDebtRatio(_strategy, _debtRatio);
+    function setStrategyDebtRatio(address _strategy, uint16 _debtRatio) external onlyManager {
+        DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        require(strategy.lastReport > 0, Errors.StrategyNotActive(_strategy));
+        _setDebtRatio(strategy, _debtRatio);
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setStrategyMinDebtDelta(address _strategy, uint256 _minDebtDelta) external onlyManager onlyActiveStrategy(_strategy) {
+    function setStrategyMinDebtDelta(address _strategy, uint256 _minDebtDelta) external onlyManager {
         DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        require(strategy.lastReport > 0, Errors.StrategyNotActive(_strategy));
         require(strategy.maxDebtDelta >= _minDebtDelta, Errors.InvalidDebtDelta());
 
         strategy.minDebtDelta = _minDebtDelta;
@@ -210,8 +196,9 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function setStrategyMaxDebtDelta(address _strategy, uint256 _maxDebtDelta) external onlyManager onlyActiveStrategy(_strategy) {
+    function setStrategyMaxDebtDelta(address _strategy, uint256 _maxDebtDelta) external onlyManager {
         DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        require(strategy.lastReport > 0, Errors.StrategyNotActive(_strategy));
         require(strategy.minDebtDelta <= _maxDebtDelta, Errors.InvalidDebtDelta());
 
         strategy.maxDebtDelta = _maxDebtDelta;
@@ -220,8 +207,10 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     }
 
     /// @inheritdoc IMultistrategyManageable
-    function panicAdapter(address _strategy) external onlyGuardian onlyActiveStrategy(_strategy) {
-        _setDebtRatio(_strategy, 0);
+    function panicAdapter(address _strategy) external onlyGuardian {
+        DataTypes.StrategyParams storage strategy = strategies[_strategy];
+        require(strategy.lastReport > 0, Errors.StrategyNotActive(_strategy));
+        _setDebtRatio(strategy, 0);
         IAdapter(_strategy).panic();
     }
 
@@ -232,13 +221,12 @@ abstract contract MultistrategyManageable is IMultistrategyManageable, Multistra
     /// @notice Sets the debt ratio for a strategy.
     /// @param _strategy The strategy address.
     /// @param _debtRatio The new debt ratio.
-    function _setDebtRatio(address _strategy, uint16 _debtRatio) internal {
-        DataTypes.StrategyParams storage strategy = strategies[_strategy];
-        uint16 newDebtRatio = debtRatio - strategy.debtRatio + _debtRatio;
+    function _setDebtRatio(DataTypes.StrategyParams storage _strategy, uint16 _debtRatio) internal {
+        uint16 newDebtRatio = debtRatio - _strategy.debtRatio + _debtRatio;
         require(newDebtRatio <= Constants.MAX_BPS, Errors.DebtRatioAboveMaximum(newDebtRatio));
 
         debtRatio = newDebtRatio;
-        strategy.debtRatio = _debtRatio;
+        _strategy.debtRatio = _debtRatio;
 
         emit StrategyDebtRatioSet(_strategy, _debtRatio);
     }
